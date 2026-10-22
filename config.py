@@ -82,6 +82,8 @@ SUJETS_MOTS = {
                       "cout de la vie", "carburant", "energie en france", "consommation"],
     "institutions": ["gouvernement", "assemblee nationale", "senat", "election", "parlement",
                      "constitution", "ministre", "personnalite politique", "parti politique",
+                     "depute", "senateur", "maire de", "candidat a l'election",
+                     "dirigeant de parti", "personnalite de la cinquieme republique",
                      "loi francaise", "projet de loi", "budget de l'etat", "finances publiques",
                      "politique en france", "president de la republique", "referendum",
                      "procedure parlementaire"],
@@ -91,6 +93,13 @@ SUJETS_EXCLUS = ["sport", "football", "rugby", "tennis", "cyclisme", "olympique"
                  "actrice", "chanteur", "chanteuse", "jeu video", "personnage de fiction",
                  "manga", "roman ", "telerealite", "championnat", "club de", "festival",
                  "affaire criminelle", "meurtre"]
+# Catégories ignorées : elles décrivent l'entourage d'une personne, pas son rôle
+# (« Conjoint de personnalité politique », « Enfant de… »)
+SUJETS_CATEGORIES_IGNOREES = ["conjoint", "epoux", "epouse", "enfant de", "famille ",
+                              "frere de", "soeur de", "pere de", "mere de"]
+# Un événement daté d'il y a plus de 2 ans dans son titre (« Massacre du 17 octobre
+# 1961 ») qui remonte est une commémoration, pas un sujet émergent
+SUJETS_ANCIENNETE_MAX = 2
 
 # ---------------------------------------------------------------------------
 # INSEE : enquête mensuelle de conjoncture auprès des ménages.
