@@ -113,6 +113,15 @@ def delta(v, suffixe=""):
     return Markup(f'<span class="delta {cls}">{fleche} {fr(v, 0, True)}{suffixe}</span>')
 
 
+def _geojson() -> str:
+    """Contours des départements, inclus dans la page (aucun appel externe)."""
+    chemin = RACINE / "assets" / "departements.geojson"
+    if not chemin.exists():
+        return "null"
+    # protège la balise <script> qui l'entoure
+    return chemin.read_text(encoding="utf-8").replace("</", "<\\/")
+
+
 # --------------------------------------------------------------------------
 def generer(ind: dict, prev: dict, statuts: list[dict]) -> Path:
     env = Environment(loader=FileSystemLoader(RACINE / "templates"),
@@ -126,12 +135,14 @@ def generer(ind: dict, prev: dict, statuts: list[dict]) -> Path:
         "historique": ind["historique"],
         "decisions": ind["decisions"],
         "carte": ind["carte"],
+        "terrain": ind.get("terrain"),
         "piliers": {"meteo": "Météo sociale", **config.PILIERS},
     }
     html = env.get_template("tableau.html.j2").render(
         ind=ind, prev=prev, statuts=statuts, calcule=calcule,
         piliers_noms=config.PILIERS, donnees_js=donnees_js,
         min_hist=config.MIN_HISTORIQUE,
+        departements_geojson=Markup(_geojson()),
         demo=bool(os.environ.get("BAROMETRE_DEMO")),
         depot=os.environ.get("GITHUB_REPOSITORY", ""),
     )

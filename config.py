@@ -168,6 +168,16 @@ GDELT_RATTRAPAGE_JOURS = 210   # événements : ~7 mois, pour être actifs tout 
 GDELT_BUDGET_MINUTES = 25      # temps max par lancement ; le reste suit la semaine d'après
 
 # ---------------------------------------------------------------------------
+# Le terrain par département (carte)
+# Chômage localisé : automatique, chaque trimestre (INSEE, jeu TAUX-CHOMAGE).
+# Pauvreté : fichier Filosofi publié une fois par an par l'Insee (page « Niveau de
+# vie et pauvreté par région »). À la sortie d'un nouveau millésime, remplacer
+# l'adresse et l'année ci-dessous.
+# ---------------------------------------------------------------------------
+PAUVRETE_URL = "https://www.insee.fr/fr/statistiques/fichier/7941411/RPM2024-F21.xlsx"
+PAUVRETE_MILLESIME = 2021
+
+# ---------------------------------------------------------------------------
 # Carburants : prix à la pompe (open data du ministère de l'Économie)
 # ---------------------------------------------------------------------------
 CARBURANTS = {
@@ -184,6 +194,11 @@ MIN_HISTORIQUE = 26      # semaines minimum avant qu'une série compte
 FENETRE_MOIS = 24        # idem pour les séries mensuelles INSEE
 MIN_HISTORIQUE_MOIS = 12
 SEUIL_VOYANT = 2.0       # écart (en σ) à partir duquel un voyant s'allume
+# Listes « Ce qui se tend » / « Ce qui s'apaise » : mêmes règles dans les deux sens.
+# Un indicateur y figure dès qu'il s'écarte d'au moins 1σ de sa normale (une page
+# Wikipédia isolée, plus bruitée, à partir de SEUIL_VOYANT + 0,5).
+SEUIL_LISTE = 1.0
+LISTE_MAX = 6           # lignes par colonne, identique des deux côtés
 
 # Score 0-100 : 50 = semaine normale, 73 ≈ +1σ, 88 ≈ +2σ ; seuils d'affichage
 SEUILS = [(90, "Alerte", "critical"), (75, "Tension", "serious"),

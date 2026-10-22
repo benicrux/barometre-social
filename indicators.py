@@ -375,6 +375,61 @@ def _sujets(fin: pd.Timestamp):
     return sorted(sortie, key=lambda x: -(x["ratio"] or 0))
 
 
+NOMS_OUTREMER = {"971": "Guadeloupe", "972": "Martinique", "973": "Guyane",
+                  "974": "La Réunion", "976": "Mayotte"}
+
+
+def _noms_departements() -> dict:
+    chemin = RACINE / "assets" / "departements.geojson"
+    noms = dict(NOMS_OUTREMER)
+    if chemin.exists():
+        import json
+        for f in json.loads(chemin.read_text(encoding="utf-8"))["features"]:
+            noms[f["properties"]["code"]] = f["properties"]["nom"]
+    return noms
+
+
+def _libelle_trimestre(t: str) -> str:
+    try:
+        annee, q = t.split("-Q")
+        return f"{'1er' if q == '1' else q + 'e'} trimestre {annee}"
+    except ValueError:
+        return t
+
+
+def _terrain():
+    """Chômage (niveau et évolution sur un an) et pauvreté, par département."""
+    ch = lire("chomage_dep.csv", dtype={"valeur": float})
+    if ch.empty:
+        return None
+    ch["dep"] = ch["zone"].str[1:]
+    piv = ch.pivot_table(index="trimestre", columns="dep", values="valeur").sort_index()
+    dernier = piv.index[-1]
+    avant = piv.index[-5] if len(piv) >= 5 else None
+    pauv = lire("pauvrete_dep.csv", dtype=str)
+    taux_p = ({r.dep: float(r.taux_pauvrete) for r in pauv.itertuples()} if not pauv.empty else {})
+    noms = _noms_departements()
+    deps = []
+    for dep in piv.columns:
+        v = piv.at[dernier, dep]
+        if pd.isna(v):
+            continue
+        e = None if avant is None or pd.isna(piv.at[avant, dep]) else round(v - piv.at[avant, dep], 1)
+        deps.append({"code": dep, "nom": noms.get(dep, dep), "chomage": round(float(v), 1),
+                     "evol": e, "pauvrete": taux_p.get(dep)})
+    evols = [d for d in deps if d["evol"] is not None]
+    baisse = sorted([d for d in evols if d["evol"] <= -0.2], key=lambda d: d["evol"])
+    hausse = sorted([d for d in evols if d["evol"] >= 0.2], key=lambda d: -d["evol"])
+    return {
+        "trimestre": _libelle_trimestre(dernier),
+        "deps": sorted(deps, key=lambda d: d["code"]),
+        "n_baisse": len(baisse), "n_hausse": len(hausse),
+        "n_stable": len(evols) - len(baisse) - len(hausse),
+        "baisses": baisse[:3], "hausses": hausse[:3],
+        "pauvrete_millesime": pauv["millesime"].iloc[0] if not pauv.empty else None,
+    }
+
+
 def _carte(fin: pd.Timestamp):
     lieux = lire("gdelt_lieux.csv")
     if lieux.empty:
@@ -482,7 +537,7 @@ def calculer() -> dict:
     voyants = []
     for c in comps:
         z = c.z.get(fin)
-        if z is not None and pd.notna(z) and abs(z) >= config.SEUIL_VOYANT:
+        if z is not None and pd.notna(z) and abs(z) >= config.SEUIL_LISTE:
             voyants.append({"libelle": c.libelle, "pilier": config.PILIERS[c.pilier],
                             "z": _f(z), "valeur": c.affichage.get(fin, ""),
                             "sens": "hausse" if z > 0 else "baisse",
@@ -505,18 +560,48 @@ def calculer() -> dict:
                          "vs": vs_normale(vues[p], fin),
                          "niveau": niveau(vues[p], fin, bas=False)}
                 pages_suivies.append(ligne)
-                if z is not None and pd.notna(z) and z >= config.SEUIL_VOYANT + 0.5:
+                # Une page compte comme voyant si elle s'écarte nettement de la normale,
+                # dans un sens ou dans l'autre. Pour la baisse, on exige aussi au moins
+                # 30 % sous la normale : l'audience de Wikipédia s'érode d'elle-même.
+                hausse = z is not None and pd.notna(z) and z >= config.SEUIL_VOYANT + 0.5
+                baisse = (z is not None and pd.notna(z) and z <= -(config.SEUIL_VOYANT + 0.5)
+                          and ligne["vs"] is not None and ligne["vs"] <= -30)
+                if hausse or baisse:
                     voyants.append({"libelle": f"Wikipédia « {p} »",
                                     "pilier": config.PILIERS[pilier], "z": _f(z),
-                                    "valeur": f"{int(v):,} vues".replace(",", " ")
-                                    if pd.notna(v) else "", "sens": "hausse",
+                                    "valeur": f"{int(v):,} vues".replace(",", "\u202f")
+                                    if pd.notna(v) else "",
+                                    "sens": "hausse" if hausse else "baisse",
                                     "niveau": ligne["niveau"], "vs": ligne["vs"]})
-    voyants.sort(key=lambda v: -abs(v["z"]))
+    # Deux listes de même poids : ce qui se tend, ce qui s'apaise
+    tensions = sorted([v for v in voyants if v["sens"] == "hausse"], key=lambda v: -v["z"])
+    detentes = sorted([v for v in voyants if v["sens"] == "baisse"], key=lambda v: v["z"])
     for cle, p in piliers.items():
-        if p.get("delta1") is not None and p["delta1"] >= 15:
-            voyants.insert(0, {"libelle": f"Jauge « {p['nom']} » : +{p['delta1']:.0f} points "
-                               "en une semaine", "pilier": p["nom"], "z": None,
-                               "valeur": "", "sens": "hausse"})
+        d1 = p.get("delta1")
+        if d1 is not None and d1 >= 15:
+            tensions.insert(0, {"libelle": f"Jauge « {p['nom']} » : +{d1:.0f} points en une "
+                                "semaine", "pilier": p["nom"], "z": None, "valeur": "",
+                                "sens": "hausse"})
+        elif d1 is not None and d1 <= -15:
+            detentes.insert(0, {"libelle": f"Jauge « {p['nom']} » : {d1:.0f} points en une "
+                                "semaine".replace("-", "\u2212"), "pilier": p["nom"], "z": None,
+                                "valeur": "", "sens": "baisse"})
+
+    # Ce qui reste calme : jauges au calme et indicateurs sous leur normale (sans être
+    # assez bas pour « s'apaise »). Une semaine tendue a aussi ses zones tranquilles.
+    calmes = []
+    for p in piliers.values():
+        if p["score"] is not None and p["score"] < config.SEUILS[-2][0]:
+            calmes.append({"libelle": f"Jauge « {p['nom']} »", "pilier": "jauge",
+                           "valeur": f"{p['score']:.0f}/100 · {p['statut'][0].lower()}",
+                           "z": None, "niveau": None, "vs": None})
+    for c in comps:
+        z = c.z.get(fin)
+        if z is not None and pd.notna(z) and -config.SEUIL_LISTE < z <= -0.5:
+            calmes.append({"libelle": c.libelle, "pilier": config.PILIERS[c.pilier], "z": _f(z),
+                           "valeur": c.affichage.get(fin, ""),
+                           "niveau": _niveau_composante(c, fin),
+                           "vs": vs_normale(c.brut, fin) if c.ratio else None})
 
     # Historique (2 ans) et vue mensuelle (12 mois)
     debut_hist = fin - pd.Timedelta(weeks=104)
@@ -539,7 +624,10 @@ def calculer() -> dict:
                   "delta4": _variation(meteo.loc[:fin], 4),
                   "sparkline": _sparkline(meteo.loc[:fin])},
         "piliers": list(piliers.values()),
-        "voyants": voyants[:12],
+        "tensions": tensions[:config.LISTE_MAX],
+        "detentes": detentes[:config.LISTE_MAX],
+        "calmes": calmes[:config.LISTE_MAX],
+        "terrain": _terrain(),
         "montent": _montent(fin),
         "sujets": _sujets(fin),
         "pages_suivies": pages_suivies,

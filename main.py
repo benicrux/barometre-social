@@ -10,7 +10,7 @@ import sys
 import time
 import traceback
 
-from collect import carburants, gdelt, insee, wikipedia
+from collect import carburants, gdelt, insee, territoires, wikipedia
 from collect.common import ecrire_json, lire_json, session
 
 SOURCES = [
@@ -19,6 +19,7 @@ SOURCES = [
     ("GDELT presse", gdelt.collecter_presse),
     ("GDELT événements", gdelt.collecter_evenements),
     ("Prix des carburants", carburants.collecter),
+    ("Territoires (chômage, pauvreté)", territoires.collecter),
 ]
 
 
