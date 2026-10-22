@@ -11,8 +11,8 @@
  },
  {
   "source": "GDELT presse",
-  "ok": false,
-  "message": "GDELT refuse pour l'instant les requêtes venant de GitHub (erreur 429) : l'indicateur « Presse : licenciements » est en pause, nouvel essai au prochain lancement. Le reste du tableau de bord n'est pas concerné."
+  "ok": true,
+  "message": "1/1 séries à jour ; historique du 2026-07-25 au 2026-10-22 ; rattrapage : 0/12 tranches (la suite au prochain lancement)"
  },
  {
   "source": "GDELT événements",
