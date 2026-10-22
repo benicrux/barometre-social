@@ -414,18 +414,23 @@ def _terrain():
         v = piv.at[dernier, dep]
         if pd.isna(v):
             continue
-        e = None if avant is None or pd.isna(piv.at[avant, dep]) else round(v - piv.at[avant, dep], 1)
+        e = (None if avant is None or pd.isna(piv.at[avant, dep])
+             else round(float(v - piv.at[avant, dep]), 1))
         deps.append({"code": dep, "nom": noms.get(dep, dep), "chomage": round(float(v), 1),
                      "evol": e, "pauvrete": taux_p.get(dep)})
-    evols = [d for d in deps if d["evol"] is not None]
-    baisse = sorted([d for d in evols if d["evol"] <= -0.2], key=lambda d: d["evol"])
-    hausse = sorted([d for d in evols if d["evol"] >= 0.2], key=lambda d: -d["evol"])
+    # Bilan sur la métropole : les chiffres d'outre-mer, tirés de petits échantillons,
+    # bougent trop d'un trimestre à l'autre pour être comparés tels quels.
+    evols = sorted([d for d in deps if d["evol"] is not None and not d["code"].startswith("97")],
+                   key=lambda d: d["evol"])
+    n_baisse = int(sum(d["evol"] <= -0.2 for d in evols))
+    n_hausse = int(sum(d["evol"] >= 0.2 for d in evols))
     return {
         "trimestre": _libelle_trimestre(dernier),
         "deps": sorted(deps, key=lambda d: d["code"]),
-        "n_baisse": len(baisse), "n_hausse": len(hausse),
-        "n_stable": len(evols) - len(baisse) - len(hausse),
-        "baisses": baisse[:3], "hausses": hausse[:3],
+        "n_baisse": n_baisse, "n_hausse": n_hausse,
+        "n_stable": len(evols) - n_baisse - n_hausse,
+        # les trois évolutions les plus favorables et les trois plus défavorables
+        "meilleurs": evols[:3], "pires": evols[::-1][:3],
         "pauvrete_millesime": pauv["millesime"].iloc[0] if not pauv.empty else None,
     }
 

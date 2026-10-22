@@ -325,7 +325,11 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
     <p class="aide">En couleur, la situation de chaque département ; en points, les actions de contestation relevées dans la presse cette semaine (GDELT, codage automatique : des ordres de grandeur, pas un décompte officiel).</p>
     {% set t = ind.terrain %}
     {% if t %}
-    <p class="bilan">Sur un an ({{ t.trimestre }}), le chômage <b class="fleche-b">baisse dans {{ t.n_baisse }} départements</b>, reste stable dans {{ t.n_stable }} et <b class="fleche-h">monte dans {{ t.n_hausse }}</b>.</p>
+    {% macro deps(n) %}{{ n }} département{{ 's' if n > 1 }}{% endmacro %}
+    <p class="bilan">En métropole, sur un an ({{ t.trimestre }}), le chômage
+      {%- if t.n_baisse %} <b class="fleche-b">baisse dans {{ deps(t.n_baisse) }}</b>{% else %} <b>ne baisse dans aucun département</b>{% endif %}
+      {%- if t.n_stable %}, reste stable dans {{ t.n_stable }}{% endif %} et
+      {%- if t.n_hausse %} <b class="fleche-h">monte dans {{ t.n_hausse }}</b>{% else %} <b>ne monte dans aucun</b>{% endif %}.</p>
     {% endif %}
     {% if t or ind.carte %}
     <div class="filtres" role="group" aria-label="Fond de carte">
@@ -339,10 +343,10 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
     {% else %}<p class="vide">Pas encore de données territoriales.</p>{% endif %}
     {% if t %}
     <div class="deux-col" style="margin-top:12px">
-      <div><h3 class="sous-titre"><span class="fleche-b" aria-hidden="true">▼</span> Les plus fortes baisses du chômage</h3>
-        <ul class="liste">{% for d in t.baisses %}<li><span>{{ d.nom }}</span><span class="sec">{{ d.chomage|fr(1) }} %</span><span class="num">{{ d.evol|fr(1, true) }} pt</span></li>{% else %}<li><span class="vide">Aucune baisse notable</span></li>{% endfor %}</ul></div>
-      <div><h3 class="sous-titre"><span class="fleche-h" aria-hidden="true">▲</span> Les plus fortes hausses du chômage</h3>
-        <ul class="liste">{% for d in t.hausses %}<li><span>{{ d.nom }}</span><span class="sec">{{ d.chomage|fr(1) }} %</span><span class="num">{{ d.evol|fr(1, true) }} pt</span></li>{% else %}<li><span class="vide">Aucune hausse notable</span></li>{% endfor %}</ul></div>
+    {% for titre, liste, cls, ic in [("Les évolutions les plus favorables", t.meilleurs, "fleche-b", "▼"), ("Les évolutions les plus défavorables", t.pires, "fleche-h", "▲")] %}
+      <div><h3 class="sous-titre"><span class="{{ cls }}" aria-hidden="true">{{ ic }}</span> {{ titre }}</h3>
+        <ul class="liste">{% for d in liste %}<li><span>{{ d.nom }}</span><span class="sec">chômage {{ d.chomage|fr(1) }} %</span><span class="num">{{ d.evol|fr(1, true) }} pt</span></li>{% endfor %}</ul></div>
+    {% endfor %}
     </div>
     {% endif %}
     {% if ind.types %}
@@ -356,6 +360,7 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
       <div class="defile"><table><thead><tr><th>Département</th><th class="n">Chômage</th><th class="n">Sur un an</th><th class="n">Pauvreté</th></tr></thead><tbody>
       {% for d in t.deps %}<tr><td>{{ d.code }} · {{ d.nom }}</td><td class="n">{{ d.chomage|fr(1) }} %</td><td class="n">{{ (d.evol|fr(1, true) ~ ' pt') if d.evol is not none else '–' }}</td><td class="n">{{ (d.pauvrete|fr(1) ~ ' %') if d.pauvrete is not none else '–' }}</td></tr>{% endfor %}
       </tbody></table></div>
+      <p class="aide" style="margin-top:8px">Chômage : taux localisé INSEE, corrigé des variations saisonnières ; « sur un an » compare au même trimestre de l'année précédente. Outre-mer : estimations plus fragiles, qui varient fortement d'un trimestre à l'autre. Pauvreté : part des habitants sous 60 % du niveau de vie médian (INSEE, Filosofi).</p>
     </details>
     {% endif %}
     {% if ind.carte %}
