@@ -7,7 +7,7 @@
  {
   "source": "INSEE (enquête ménages)",
   "ok": true,
-  "message": "5 séries (jeu complet), dernier mois 2026-09"
+  "message": "5 séries (jeu complet), dernier mois 2026-09 ; 10 questions détaillées"
  },
  {
   "source": "GDELT presse",
@@ -22,7 +22,7 @@
  {
   "source": "Prix des carburants",
   "ok": true,
-  "message": "gazole 2.370 € ; e10 2.149 €"
+  "message": "gazole 2.371 € ; e10 2.149 €"
  },
  {
   "source": "Territoires (chômage, pauvreté)",
