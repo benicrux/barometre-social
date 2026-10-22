@@ -1,0 +1,23 @@
+name: Exploration (temporaire)
+on:
+  push:
+    branches: [exploration]
+permissions:
+  contents: write
+jobs:
+  explorer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - run: python explorer.py
+      - run: |
+          git config user.name "barometre-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add exploration
+          git commit -m "Résultats de l'exploration [skip ci]" || true
+          git push origin HEAD:exploration-resultats --force
