@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>État du pays</title>
+<meta name="description" content="Tableau de bord mensuel de la France : économie, emploi, sorties et loisirs, indicateurs de richesse.">
+<style>
+{% include "_style.css" %}
+</style>
+</head>
+<body>
+<div class="tricolore" aria-hidden="true"></div>
+<div class="page">
+
+{% set actif = "pays" %}{% include "_onglets.html.j2" %}
+
+<header class="tete">
+  <div>
+    <div class="surtitre">Baromètre social · France</div>
+    <h1>État du pays</h1>
+    <p class="sous">Les derniers chiffres officiels, comparés à l'an dernier</p>
+  </div>
+  <div class="meta">Calculé le {{ calcule }}<br>Nouveaux chiffres repris chaque lundi</div>
+</header>
+
+{% if not pays %}
+<section class="carte-ui"><p class="vide">Les chiffres de l'INSEE ne sont pas encore disponibles : ils arriveront au prochain lancement.</p></section>
+{% else %}
+
+{% macro ligne(i) %}
+  <li>
+    <span class="nom"><b>{{ i.libelle }}</b>{% if i.aide %}<br><span class="sec">{{ i.aide }}</span>{% endif %}</span>
+    {% if i.dispo %}
+    <span class="val">{{ i.grand }}<br><span class="sec">{{ i.periode }}</span></span>
+    <span class="evo">{{ i.detail }}{% if i.euros %}<br><span class="sec">{{ i.euros }}</span>{% endif %}</span>
+    <span class="ver">{{ i.statut|puce }}</span>
+    <span class="spk">{{ i.sparkline|sparkline(104, 30, none, "Évolution de " ~ i.libelle ~ " sur les dernières années") }}</span>
+    {% else %}
+    <span class="val sec" style="font-size:13px;font-weight:400">pas encore disponible</span>
+    {% endif %}
+  </li>
+{% endmacro %}
+
+<!-- Ce qui va mieux, ce qui va moins bien -->
+<section class="carte-ui" aria-labelledby="t-bilan">
+  <h2 id="t-bilan">Ce qui va mieux, ce qui va moins bien</h2>
+  <p class="aide">Même règle pour tous : chaque chiffre est comparé à la même période de l'an dernier (à cinq ans pour les indicateurs de richesse, qui bougent lentement). En dessous d'un petit écart fixé pour chacun, on parle de « stable ».</p>
+  <p class="bilan-pays">Sur {{ pays.n }} indicateurs : <b class="fleche-b">{{ pays.mieux|length }} s'améliore{{ 'nt' if pays.mieux|length > 1 }}</b>, {{ pays.stables|length }} {{ 'sont stables' if pays.stables|length > 1 else 'est stable' }}, <b class="fleche-h">{{ pays.moins|length }} se dégrade{{ 'nt' if pays.moins|length > 1 }}</b>.</p>
+  <div class="deux-col">
+  {% for titre, liste, cls, ic in [("Ce qui va mieux", pays.mieux, "fleche-b", "▲"), ("Ce qui va moins bien", pays.moins, "fleche-h", "▼")] %}
+    <div>
+      <h3 class="sous-titre"><span class="{{ cls }}" aria-hidden="true">{{ ic }}</span> {{ titre }}</h3>
+      {% if liste %}
+      <ul class="liste voy">{% for i in liste[:6] %}<li><span>{{ i.libelle }}<br><span class="sec">{{ i.evol }} {{ i.ref }}</span></span></li>{% endfor %}</ul>
+      {% if liste|length > 6 %}<p class="aide" style="margin-top:6px">et {{ liste|length - 6 }} autre{{ 's' if liste|length - 6 > 1 }}, détaillé{{ 's' if liste|length - 6 > 1 }} plus bas.</p>{% endif %}
+      {% else %}<p class="vide">Aucun cette fois-ci.</p>{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+</section>
+
+{% for sec in pays.sections %}
+<section class="carte-ui" aria-labelledby="t-{{ sec.cle }}">
+  <h2 id="t-{{ sec.cle }}">{{ sec.nom }}</h2>
+  {% if sec.cle == "loisirs" %}<p class="aide">Chiffre d'affaires des professionnels de chaque activité (INSEE), sur les trois derniers mois connus, comparé aux mêmes mois de l'an dernier. On retire la hausse générale des prix pour voir si l'activité progresse vraiment. C'est un reflet de la fréquentation, pas un comptage des entrées.</p>
+  {% elif sec.cle == "richesse" %}<p class="aide">Les indicateurs retenus par la loi de 2015 pour mesurer la richesse au-delà du PIB. Publiés une fois par an, souvent avec un ou deux ans de retard ; on les compare à cinq ans plus tôt. L'artificialisation des sols n'est pas encore disponible automatiquement.</p>
+  {% else %}<p class="aide">Indicateurs mensuels ou trimestriels de l'INSEE, publiés avec un à trois mois de décalage.</p>{% endif %}
+  <ul class="indic">{% for i in sec.indicateurs %}{{ ligne(i) }}{% endfor %}</ul>
+</section>
+{% endfor %}
+
+{% endif %}
+
+<footer>Baromètre social · données publiques de l'INSEE (base de données macroéconomiques), calcul automatique. Ce n'est ni un classement officiel ni une prévision.</footer>
+</div>
+</body>
+</html>

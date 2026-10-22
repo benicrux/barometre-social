@@ -10,7 +10,7 @@ import sys
 import time
 import traceback
 
-from collect import carburants, gdelt, insee, territoires, wikipedia
+from collect import carburants, gdelt, insee, pays, territoires, wikipedia
 from collect.common import ecrire_json, lire_json, session
 
 SOURCES = [
@@ -20,6 +20,7 @@ SOURCES = [
     ("GDELT événements", gdelt.collecter_evenements),
     ("Prix des carburants", carburants.collecter),
     ("Territoires (chômage, pauvreté)", territoires.collecter),
+    ("État du pays (INSEE)", pays.collecter),
 ]
 
 
@@ -56,7 +57,13 @@ def main(argv: list[str]) -> int:
     except Exception as e:
         traceback.print_exc()
         prev = {"dispo": False, "raison": f"prévision indisponible cette semaine ({e})"}
-    chemin = render.generer(ind, prev, statuts)
+    import pays as volet_pays
+    try:
+        etat = volet_pays.calculer_pays()
+    except Exception:
+        traceback.print_exc()
+        etat = None
+    chemin = render.generer(ind, prev, statuts, etat)
     print(f"Page générée : {chemin}")
     print(f"Météo sociale : {ind['meteo']['score']} ({ind['meteo']['statut'][0]})")
     return 0

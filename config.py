@@ -229,3 +229,82 @@ LISTE_MAX = 6           # lignes par colonne, identique des deux côtés
 # Score 0-100 : 50 = semaine normale, 73 ≈ +1σ, 88 ≈ +2σ ; seuils d'affichage
 SEUILS = [(90, "Alerte", "critical"), (75, "Tension", "serious"),
           (60, "Vigilance", "warning"), (0, "Calme", "good")]
+
+# ===========================================================================
+# VOLET 2 : ÉTAT DU PAYS (page mensuelle)
+# Tous les chiffres viennent de la base INSEE (identifiants « idbank »).
+#   mode « taux »   : on compare des points (8,3 % -> 9,1 % = +0,8 pt)
+#   mode « niveau » : on compare en % (créations, emplois, consommation…)
+#   mode « ca »     : chiffre d'affaires, comparé hors hausse des prix
+#   bon = +1 : plus haut = mieux ; -1 : plus bas = mieux
+#   seuil : écart en dessous duquel on parle de « stable »
+#   lissage : nombre de mois moyennés (évite les à-coups d'un mois isolé)
+#   horizon : comparaison à 1 an (conjoncture) ou 5 ans (indicateurs de fond)
+# ===========================================================================
+PAYS_SECTIONS = {
+    "economie": "Économie et emploi",
+    "loisirs": "Sorties et loisirs",
+    "richesse": "Les indicateurs de richesse",
+}
+PAYS_DEFLATEUR = "011812231"   # prix à la consommation harmonisés, ensemble (base 2025)
+PAYS = [
+    # --- Économie et emploi --------------------------------------------------
+    dict(id="chomage", section="economie", libelle="Taux de chômage", idbank="011818543",
+         mode="taux", bon=-1, seuil=0.2, unite="%", aide="au sens du BIT, France entière"),
+    dict(id="inflation", section="economie", libelle="Hausse des prix sur un an", idbank="011812232",
+         mode="taux", bon=-1, seuil=0.3, unite="%", aide="prix à la consommation harmonisés"),
+    dict(id="emploi_salarie", section="economie", libelle="Emplois salariés", idbank="001796852",
+         mode="niveau", bon=+1, seuil=0.3, unite="milliers", aide="ensemble des salariés"),
+    dict(id="conso", section="economie", libelle="Consommation des ménages en biens",
+         idbank="011794487", mode="niveau", bon=+1, seuil=1, lissage=3, unite="indice",
+         aide="en volume, moyenne sur 3 mois"),
+    dict(id="creations", section="economie", libelle="Créations d'entreprises", idbank="010755538",
+         mode="niveau", bon=+1, seuil=3, lissage=3, unite="nombre", aide="par mois, moyenne sur 3 mois"),
+    dict(id="defaillances", section="economie", libelle="Défaillances d'entreprises",
+         idbank="001656101", mode="niveau", bon=-1, seuil=3, unite="nombre",
+         aide="cumul sur 12 mois"),
+    dict(id="industrie", section="economie", libelle="Production industrielle", idbank="010768261",
+         mode="niveau", bon=+1, seuil=1, lissage=3, unite="indice", aide="moyenne sur 3 mois"),
+    dict(id="logements", section="economie", libelle="Logements mis en chantier", idbank="001718274",
+         mode="niveau", bon=+1, seuil=3, unite="nombre", aide="cumul sur 12 mois, métropole"),
+    # --- Sorties et loisirs (chiffre d'affaires, hors hausse des prix) ----------
+    dict(id="restaurants", section="loisirs", libelle="Restaurants", idbank="010774417",
+         mode="ca", bon=+1, seuil=2, lissage=3, unite="indice"),
+    dict(id="cinemas", section="loisirs", libelle="Cinémas", idbank="010775181",
+         mode="ca", bon=+1, seuil=2, lissage=3, unite="indice"),
+    dict(id="parcs", section="loisirs", libelle="Parcs d'attractions", idbank="010775419",
+         mode="ca", bon=+1, seuil=2, lissage=3, unite="indice"),
+    dict(id="clubs_sport", section="loisirs", libelle="Clubs de sport", idbank="010774740",
+         mode="ca", bon=+1, seuil=2, lissage=3, unite="indice"),
+    dict(id="salles_sport", section="loisirs", libelle="Salles de sport", idbank="010774365",
+         mode="ca", bon=+1, seuil=2, lissage=3, unite="indice"),
+    dict(id="spectacles", section="loisirs", libelle="Spectacles vivants", idbank="010775169",
+         mode="ca", bon=+1, seuil=2, lissage=3, unite="indice"),
+    dict(id="musees", section="loisirs", libelle="Musées", idbank="010775218",
+         mode="ca", bon=+1, seuil=2, lissage=3, unite="indice"),
+    dict(id="hotels", section="loisirs", libelle="Hôtels", idbank="010775045",
+         mode="ca", bon=+1, seuil=2, lissage=3, unite="indice"),
+    # --- Indicateurs de richesse (loi de 2015), comparés à il y a 5 ans ---------
+    dict(id="taux_emploi", section="richesse", libelle="Taux d'emploi des 15-64 ans",
+         idbank="011818676", mode="taux", bon=+1, seuil=0.5, unite="%", horizon=5),
+    dict(id="recherche", section="richesse", libelle="Effort de recherche", idbank="010594852",
+         mode="taux", bon=+1, seuil=0.05, unite="% du PIB", horizon=5, decimales=2),
+    dict(id="dette", section="richesse", libelle="Dette publique", idbank="010777608",
+         mode="taux", bon=-1, seuil=2, unite="% du PIB", horizon=5),
+    dict(id="sante", section="richesse", libelle="Espérance de vie en bonne santé",
+         idbank=["010593268", "010593269"], mode="taux", bon=+1, seuil=0.5, unite="ans",
+         horizon=5, aide="moyenne femmes et hommes"),
+    dict(id="satisfaction", section="richesse", libelle="Satisfaction dans la vie",
+         idbank="010593281", mode="taux", bon=+1, seuil=0.2, unite="/10", horizon=5),
+    dict(id="inegalites", section="richesse", libelle="Inégalités de niveau de vie",
+         idbank="010594680", mode="taux", bon=-1, seuil=0.1, unite="fois", horizon=5,
+         aide="les 20 % les plus aisés comparés aux 20 % les plus modestes, après impôts et prestations"),
+    dict(id="privation", section="richesse", libelle="Privation matérielle et sociale",
+         idbank="010594486", mode="taux", bon=-1, seuil=0.5, unite="%", horizon=5,
+         aide="part des personnes privées d'au moins 5 éléments de la vie courante sur 13"),
+    dict(id="sorties_precoces", section="richesse", libelle="Jeunes sortis tôt de l'école sans diplôme",
+         idbank="010594746", mode="taux", bon=-1, seuil=0.5, unite="%", horizon=5,
+         aide="18-24 ans"),
+    dict(id="empreinte", section="richesse", libelle="Empreinte carbone par habitant",
+         idbank="010595988", mode="taux", bon=-1, seuil=0.3, unite="t éq. CO₂", horizon=5),
+]
