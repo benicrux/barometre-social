@@ -391,7 +391,7 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
       <div>
       {% for titre, liste, cls in [("Ce qui pèse le plus", md.pese, "fleche-h"), ("Ce qui tient le mieux", md.tient, "fleche-b")] %}
         <div><h3 class="sous-titre"><span class="{{ cls }}" aria-hidden="true">●</span> {{ titre }}</h3>
-          <ul class="liste voy">{% for q in liste %}<li><span>{{ q.libelle }}<br><span class="sec">{{ q.etat }}</span></span><span class="num {{ {'mieux':'fleche-b','moins bien':'fleche-h'}.get(q.mois, '') }}">{{ {'mieux':'▲ mieux','moins bien':'▼ moins bien','stable':'= stable'}[q.mois] }}<br><span class="sec">sur un mois</span></span></li>{% endfor %}</ul></div>
+          <ul class="liste voy">{% for q in liste %}<li><span>{{ q.libelle }}<br><span class="sec">{{ q.etat }}</span></span></li>{% endfor %}</ul></div>
       {% endfor %}
       </div>
       {% endif %}

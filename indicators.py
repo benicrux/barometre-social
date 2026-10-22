@@ -461,8 +461,19 @@ def _questions_moral(mensuel: pd.DataFrame):
             etat = "un peu plus optimiste que d'habitude"
         else:
             etat = "nettement plus optimiste que d'habitude"
-        lignes.append({"libelle": spec["libelle"], "z": round(float(z), 2), "etat": etat,
-                       "mois": ("stable" if abs(d) < 2 else ("mieux" if d > 0 else "moins bien"))})
+        # Une seule phrase par question : le niveau d'abord, puis la nuance du mois
+        avant = MOIS[(s.index[-1].month - 2) % 12]
+        if abs(d) >= 2:
+            if "pessimiste" in etat:
+                etat += (f", mais un peu moins qu'en {avant}" if d > 0
+                         else f", et encore plus qu'en {avant}")
+            elif "optimiste" in etat:
+                etat += (f", et encore plus qu'en {avant}" if d > 0
+                         else f", mais un peu moins qu'en {avant}")
+            else:
+                etat += (f", en amélioration par rapport à {avant}" if d > 0
+                         else f", en recul par rapport à {avant}")
+        lignes.append({"libelle": spec["libelle"], "z": round(float(z), 2), "etat": etat})
     if len(lignes) < 4:
         return None
     lignes.sort(key=lambda l: l["z"])
