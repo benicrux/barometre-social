@@ -1,0 +1,35 @@
+idbank,titre,correction,freq,n_obs,retenue
+000857187,Enquête mensuelle de conjoncture auprès des ménages - Indicateur résumé de confiance des ménages (moyenne arithmétique d'indicateurs) - Données brutes - Série arrêtée,BRUT,M,12,
+000857199,Enquête mensuelle de conjoncture auprès des ménages - Indicateur résumé de confiance des ménages (moyenne arithmétique d'indicateurs) - Données CVS - Série arrêtée,CVS,M,12,
+000857200,Enquête mensuelle de conjoncture auprès des ménages - Intentions d'achats de voitures : Solde des réponses (intentions d'achats moins pas d'achat envisagé) - Données brutes,BRUT,M,201,
+000857197,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur leur situation financière future : Solde des réponses (amélioration moins détérioration) - Données CVS,CVS,M,201,situation_fin_future
+000857191,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur l'évolution passée des prix : Solde des réponses (augmentation moins diminution) - Données CVS,CVS,M,201,prix_passes
+000857183,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur leur capacité d'épargne actuelle : Solde des réponses (favorable moins défavorable) - Données brutes,BRUT,M,201,
+001616794,Enquête mensuelle de conjoncture auprès des ménages - Intentions d'achats de logements (dans un délai de 1 an) : Solde des réponses (intentions d'achats moins pas d'achat envisagé) - Données CVS,CVS,M,201,
+000857203,Enquête mensuelle de conjoncture auprès des ménages - Achats de biens d'équipement prévus : Solde des réponses (accroissement des achats moins diminution des achats) - Données brutes,BRUT,M,201,
+000857184,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur leur situation financière personnelle - Évolution passée : Solde des réponses (amélioration moins détérioration) - Données brutes,BRUT,M,201,
+000857190,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur l'évolution future du chômage : Solde des réponses (augmentation moins diminution) - Données CVS,CVS,M,201,chomage
+000857180,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur les prix - Perspectives d'évolution : Solde des réponses (augmentation moins diminution) - Données brutes,BRUT,M,201,
+000857198,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur leur capacité d'épargne future : Solde des réponses (amélioration moins détérioration) - Données CVS,CVS,M,201,
+000857194,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur l'opportunité d'épargner : Solde des réponses (favorable moins défavorable) - Données CVS,CVS,M,201,
+001616795,Enquête mensuelle de conjoncture auprès des ménages - Dépenses d'aménagement du logement : Solde des réponses (dépenses envisagées moins pas de dépense envisagée) - Données CVS,CVS,M,201,
+000857189,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur le niveau de vie futur en France : Solde des réponses (amélioration moins détérioration) - Données CVS,CVS,M,201,niveau_vie_futur
+000857193,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur l'opportunité de faire des achats importants : Solde des réponses (favorable moins défavorable) - Données CVS,CVS,M,201,
+000857201,Enquête mensuelle de conjoncture auprès des ménages - Intentions d'achats de logements (dans un délai de 1 an) : Solde des réponses (intentions d'achats moins pas d'achat envisagé) - Données brutes,BRUT,M,201,
+011818470,Enquête mensuelle de conjoncture auprès des ménages - Indicateur synthétique de climat de l’épargne- Données CVS,CVS,M,201,
+000857176,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur le niveau de vie en France - Évolution passée : Solde des réponses (amélioration moins détérioration) - Données brutes,BRUT,M,201,
+000857188,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur le niveau de vie passé en France : Solde des réponses (amélioration moins détérioration) - Données CVS,CVS,M,201,
+000857195,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur leur capacité d'épargne actuelle : Solde des réponses (favorable moins défavorable) - Données CVS,CVS,M,201,
+001587668,Enquête mensuelle de conjoncture auprès des ménages - Indicateur synthétique de confiance des ménages (premier facteur des soldes d'opinion de l'enquête) - Données CVS,CVS,M,201,confiance
+001616793,Enquête mensuelle de conjoncture auprès des ménages - Achats de biens d'équipement prévus : Solde des réponses (accroissement des achats moins diminution des achats) - Données CVS,CVS,M,201,
+000857181,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur l'opportunité de faire des achats importants : Solde des réponses (favorable moins défavorable) - Données brutes,BRUT,M,201,
+000857202,Enquête mensuelle de conjoncture auprès des ménages - Dépenses d'aménagement du logement : Solde des réponses (dépenses envisagées moins pas de dépense envisagée) - Données brutes,BRUT,M,201,
+000857177,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur le niveau de vie en France - Perspectives d'évolution : Solde des réponses (amélioration moins détérioration) - Données brutes,BRUT,M,201,
+000857179,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur les prix - Évolution passée : Solde des réponses (augmentation moins diminution) - Données brutes,BRUT,M,201,
+000857186,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur leur capacité d'épargne future : Solde des réponses (amélioration moins détérioration) - Données brutes,BRUT,M,201,
+000857178,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur le chômage - Perspectives d'évolution : Solde des réponses (augmentation moins diminution) - Données brutes,BRUT,M,201,
+000857196,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur leur situation financière passée : Solde des réponses (amélioration moins détérioration) - Données CVS,CVS,M,201,
+000857192,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur l'évolution future des prix : Solde des réponses (augmentation moins diminution) - Données CVS,CVS,M,201,
+000857182,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur l'opportunité d'épargner : Solde des réponses (favorable moins défavorable) - Données brutes,BRUT,M,201,
+001616792,Enquête mensuelle de conjoncture auprès des ménages - Intentions d'achats de voitures : Solde des réponses (intentions d'achats moins pas d'achat envisagé) - Données CVS,CVS,M,201,
+000857185,Enquête mensuelle de conjoncture auprès des ménages - Opinion sur leur situation financière personnelle - Perspectives d'évolution : Solde des réponses (amélioration moins détérioration) - Données brutes,BRUT,M,201,

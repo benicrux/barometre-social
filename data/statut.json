@@ -1,0 +1,27 @@
+[
+ {
+  "source": "Wikipédia",
+  "ok": true,
+  "message": "27 pages suivies ; classements quotidiens : 32 nouveaux jours"
+ },
+ {
+  "source": "INSEE (enquête ménages)",
+  "ok": true,
+  "message": "5 séries (jeu complet), dernier mois 2026-09"
+ },
+ {
+  "source": "GDELT presse",
+  "ok": true,
+  "message": "2/3 séries à jour, historique depuis 2026-07-25, jusqu'au 2026-10-22 ; historique presse_mobilisation interrompu (échec après 4 essais (HTTP 429) sur https://api.gdeltproject.org/api/v2/doc/doc) ; historique presse_emploi interrompu (échec après 4 essais (HTTP 429) sur https://api.gdeltproject.org/api/v2/doc/doc) ; historique presse_ton interrompu (échec après 4 essais (HTTP 429) sur https://api.gdeltproject.org/api/v2/doc/doc) ; historique presse_ton : 1 tranches récupérées ; presse_ton : échec après 4 essais (HTTP 429) sur https://api.gdeltproject.org/api/v2/doc/doc"
+ },
+ {
+  "source": "GDELT événements",
+  "ok": true,
+  "message": "210 jours ajoutés ; historique du 2026-03-26 au 2026-10-21"
+ },
+ {
+  "source": "Prix des carburants",
+  "ok": true,
+  "message": "gazole 2.370 € ; e10 2.149 € ; historique reconstitué : 94 semaines (2025, 2026)"
+ }
+]
