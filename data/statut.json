@@ -10,11 +10,6 @@
   "message": "5 séries (jeu complet), dernier mois 2026-09 ; 10 questions détaillées"
  },
  {
-  "source": "GDELT presse",
-  "ok": false,
-  "message": "GDELT refuse pour l'instant les requêtes venant de GitHub (erreur 429) : l'indicateur « Presse : licenciements » est en pause, nouvel essai au prochain lancement. Le reste du tableau de bord n'est pas concerné."
- },
- {
   "source": "GDELT événements",
   "ok": true,
   "message": "0 jours traités ; historique du 2026-03-26 au 2026-10-21"
