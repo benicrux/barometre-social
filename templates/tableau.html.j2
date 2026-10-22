@@ -514,10 +514,15 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
       s += '<text class="g-txt" x="' + X(i) + '" y="' + (Hh - 6) + '" text-anchor="middle">' + MOIS[+p[1]-1] + (p[1] === "01" ? " " + p[0] : "") + '</text>';
     });
     // événements : les repères trop proches sont décalés vers la droite
-    var dernierX = -99;
-    evts.forEach(function(e, k){
+    var dernierX = -99, pos = evts.map(function(e){
       var x = X(idx[e.semaine]), xr = Math.max(x, dernierX + 19);
-      dernierX = xr;
+      dernierX = xr; return xr;
+    });
+    // puis, en partant de la droite, on ramène dans le cadre ceux qui dépassent
+    var limite = W - 9;
+    for (var q = pos.length - 1; q >= 0; q--) { pos[q] = Math.min(pos[q], limite); limite = pos[q] - 19; }
+    evts.forEach(function(e, k){
+      var x = X(idx[e.semaine]), xr = pos[k];
       s += '<line class="g-evt" x1="' + x + '" x2="' + x + '" y1="' + (m.t - 4) + '" y2="' + (Hh - m.b) + '"/>';
       if (xr !== x) s += '<line class="g-evt" x1="' + x + '" x2="' + xr + '" y1="' + (m.t - 4) + '" y2="' + (m.t - 8) + '"/>';
       s += '<circle class="g-evt-pt" cx="' + xr + '" cy="' + (m.t - 13) + '" r="8"/>';
@@ -605,28 +610,59 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
     function melange(a, b, t){ var x = hex(a), y = hex(b); return "rgb(" + x.map(function(v, i){ return Math.round(v + (y[i] - v) * t); }).join(",") + ")"; }
     var neutre = tok("--neutre", "#f0efec"), calme = tok("--pole-calme", "#2a78d6"), tension = tok("--pole-tension", "#e34948");
     var seq = [1, 2, 3, 4, 5].map(function(i){ return tok("--seq-" + i, "#5598e7"); });
-    function quantiles(vals){ var v = vals.slice().sort(function(a, b){ return a - b; }); return [0.2, 0.4, 0.6, 0.8].map(function(q){ return v[Math.floor(q * (v.length - 1))]; }); }
-    var bornes = {};
-    ["chomage", "pauvrete"].forEach(function(k){ var v = Object.keys(parDep).map(function(c){ return parDep[c][k]; }).filter(function(x){ return x != null; }); if (v.length) bornes[k] = quantiles(v); });
+    // Classes nettes, aux bornes rondes, plutôt qu'un dégradé continu
+    var CLASSES = {
+      evol: [  // les évolutions sont arrondies au dixième : bornes à mi-chemin
+        {jusqua: -0.45, t: -1, lib: "baisse de 0,5 pt ou plus", inclus: true},
+        {jusqua: -0.15, t: -0.5, lib: "baisse de 0,2 à 0,4 pt", inclus: true},
+        {jusqua: 0.15, t: 0, lib: "stable (0,1 pt ou moins)"},
+        {jusqua: 0.45, t: 0.3, lib: "hausse de 0,2 à 0,4 pt"},
+        {jusqua: 0.75, t: 0.55, lib: "hausse de 0,5 à 0,7 pt"},
+        {jusqua: 1.05, t: 0.8, lib: "hausse de 0,8 à 1 pt"},
+        {jusqua: Infinity, t: 1, lib: "hausse de plus de 1 pt"}],
+      chomage: [
+        {jusqua: 6.5, lib: "moins de 6,5 %"}, {jusqua: 7.5, lib: "6,5 à 7,5 %"},
+        {jusqua: 8.5, lib: "7,5 à 8,5 %"}, {jusqua: 10, lib: "8,5 à 10 %"},
+        {jusqua: Infinity, lib: "10 % ou plus"}],
+      pauvrete: [
+        {jusqua: 12, lib: "moins de 12 %"}, {jusqua: 14, lib: "12 à 14 %"},
+        {jusqua: 16, lib: "14 à 16 %"}, {jusqua: 18, lib: "16 à 18 %"},
+        {jusqua: Infinity, lib: "18 % ou plus"}]
+    };
+    var encre = tok("--encre-1", "#0b0b0b");
+    CLASSES.evol.forEach(function(c){
+      var pole = c.t < 0 ? calme : tension;
+      c.couleur = c.t === 0 ? neutre : melange(neutre, pole, Math.abs(c.t));
+      // l'extrême est un cran plus soutenu, pour bien se détacher du palier précédent
+      if (Math.abs(c.t) === 1) c.couleur = melange(pole, encre, 0.3);
+    });
+    ["chomage", "pauvrete"].forEach(function(k){ CLASSES[k].forEach(function(c, i){ c.couleur = seq[i]; }); });
+    function classe(fond, v){
+      var cl = CLASSES[fond];
+      for (var i = 0; i < cl.length; i++) {
+        if (cl[i].inclus ? v <= cl[i].jusqua : v < cl[i].jusqua) return i;
+      }
+      return cl.length - 1;
+    }
     function couleur(fond, d){
       if (!d || d[fond] == null) return tok("--grille", "#e1e0d9");
-      if (fond === "evol") { var t = Math.max(-1, Math.min(1, d.evol / 1.5)); return melange(neutre, t < 0 ? calme : tension, Math.pow(Math.abs(t), 0.8)); }
-      var b = bornes[fond], i = 0; while (i < 4 && d[fond] > b[i]) i++; return seq[i];
+      return CLASSES[fond][classe(fond, d[fond])].couleur;
     }
     var nf = function(v, n){ return v == null ? "–" : v.toFixed(n).replace(".", ","); };
     var fond = "evol", couche = null, cadre = false;
     function legende(){
       var lg = document.getElementById("legende"); lg.textContent = "";
       var span = function(cls, style, txt){ var s = document.createElement("span"); if (cls) s.className = cls; if (style) s.setAttribute("style", style); if (txt) s.textContent = txt; return s; };
-      if (!T) {
-        // pas encore de données départementales : seuls les points sont affichés
-      } else if (fond === "evol") {
-        lg.appendChild(span(null, null, "▼ baisse du chômage (−1,5 pt)"));
-        lg.appendChild(span("barre", "background:linear-gradient(90deg," + calme + "," + neutre + "," + tension + ")"));
-        lg.appendChild(span(null, null, "hausse (+1,5 pt) ▲"));
-      } else if (bornes[fond]) {
-        var b = bornes[fond], lib = [ "< " + nf(b[0], 1), nf(b[0], 1) + "–" + nf(b[1], 1), nf(b[1], 1) + "–" + nf(b[2], 1), nf(b[2], 1) + "–" + nf(b[3], 1), "> " + nf(b[3], 1) ];
-        seq.forEach(function(c, i){ var w = span(null, null, null); w.appendChild(span("pastille", "background:" + c)); w.appendChild(document.createTextNode(lib[i] + " %")); lg.appendChild(w); });
+      if (T && CLASSES[fond]) {
+        // nombre de départements de la carte dans chaque classe
+        var n = CLASSES[fond].map(function(){ return 0; });
+        ((geo && geo.features) || []).forEach(function(f){ var d = parDep[f.properties.code]; if (d && d[fond] != null) n[classe(fond, d[fond])]++; });
+        CLASSES[fond].forEach(function(c, i){
+          var w = span(null, null, null);
+          w.appendChild(span("pastille", "background:" + c.couleur));
+          w.appendChild(document.createTextNode(c.lib + " (" + n[i] + ")"));
+          lg.appendChild(w);
+        });
       }
       if (document.getElementById("voir-points")) { var w = span(null, null, null); w.appendChild(span("point", null)); w.appendChild(document.createTextNode("actions de contestation (taille = nombre)")); lg.appendChild(w); }
     }
