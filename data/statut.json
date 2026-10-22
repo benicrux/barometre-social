@@ -2,7 +2,7 @@
  {
   "source": "Wikipédia",
   "ok": true,
-  "message": "27 pages suivies ; classements quotidiens : 0 nouveaux jours ; sujets émergents : 60 pages en forte hausse examinées, 5 retenues"
+  "message": "27 pages suivies ; classements quotidiens : 0 nouveaux jours ; journal automatique : 2 repères ; sujets émergents : 60 pages en forte hausse examinées, 5 retenues"
  },
  {
   "source": "INSEE (enquête ménages)",
@@ -32,6 +32,6 @@
  {
   "source": "État du pays (INSEE)",
   "ok": true,
-  "message": "27 séries sur 27"
+  "message": "30 séries sur 30"
  }
 ]
