@@ -2,7 +2,7 @@
  {
   "source": "Wikipédia",
   "ok": true,
-  "message": "27 pages suivies ; classements quotidiens : 3 nouveaux jours"
+  "message": "27 pages suivies ; classements quotidiens : 0 nouveaux jours"
  },
  {
   "source": "INSEE (enquête ménages)",
@@ -12,12 +12,12 @@
  {
   "source": "GDELT presse",
   "ok": true,
-  "message": "0/3 séries à jour ; historique du 2026-07-25 au 2026-10-22 ; rattrapage : 0/36 tranches (temps écoulé, la suite au prochain lancement) ; presse_mobilisation : GDELT demande de ralentir (erreur 429) ; presse_emploi : GDELT demande de ralentir (erreur 429) ; presse_ton : GDELT demande de ralentir (erreur 429)"
+  "message": "1/1 séries à jour ; historique du 2026-07-25 au 2026-10-22 ; rattrapage : 0/12 tranches (la suite au prochain lancement)"
  },
  {
   "source": "GDELT événements",
   "ok": true,
-  "message": "0 jours ajoutés ; historique du 2026-03-26 au 2026-10-21"
+  "message": "210 jours traités ; historique du 2026-03-26 au 2026-10-21 ; mise à niveau : 210 jours recalculés avec la tonalité"
  },
  {
   "source": "Prix des carburants",
