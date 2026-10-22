@@ -35,7 +35,7 @@
     <span class="val">{{ i.grand }}<br><span class="sec">{{ i.periode }}</span></span>
     <span class="evo">{{ i.detail }}{% if i.euros %}<br><span class="sec">{{ i.euros }}</span>{% endif %}</span>
     <span class="ver">{{ i.statut|puce }}</span>
-    <span class="spk">{{ i.sparkline|sparkline(104, 30, none, "Évolution de " ~ i.libelle ~ " sur les dernières années") }}</span>
+    <span class="spk">{{ i.sparkline.valeurs|sparkline(104, 30, none, i.libelle ~ " : évolution de " ~ i.sparkline.debut ~ " à " ~ i.sparkline.fin) }}<span class="spk-axe" aria-hidden="true"><span>{{ i.sparkline.debut }}</span><span>{{ i.sparkline.fin }}</span></span></span>
     {% else %}
     <span class="val sec" style="font-size:13px;font-weight:400">pas encore disponible</span>
     {% endif %}

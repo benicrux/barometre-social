@@ -169,15 +169,6 @@ GDELT_PART = dict(
 GDELT_TON = dict(
     pilier="moral", sens=-1, libelle="Tonalité de l'actualité en France",
 )
-# En bonus, via l'API DOC de GDELT (souvent bloquée depuis GitHub : erreur 429)
-GDELT_REQUETES = {
-    "presse_emploi": dict(
-        pilier="emploi", sens=+1, libelle="Presse : licenciements et plans sociaux",
-        q='(licenciements OR "plan social" OR "suppressions de postes") '
-          "sourcecountry:france sourcelang:french",
-    ),
-}
-
 # Événements « contestation » (code CAMEO 14) géolocalisés en France
 GDELT_TYPES = {
     "141": "Manifestations",
@@ -189,7 +180,6 @@ GDELT_EVENEMENTS = dict(
     pilier="mobilisation", sens=+1, libelle="Actions de contestation recensées",
 )
 # Historique récupéré automatiquement (dès le premier lancement)
-GDELT_PRESSE_ANNEES = 3        # couverture presse : l'API remonte jusqu'à 2017
 GDELT_RATTRAPAGE_JOURS = 210   # événements : ~7 mois, pour être actifs tout de suite
 GDELT_BUDGET_MINUTES = 25      # temps max par lancement ; le reste suit la semaine d'après
 

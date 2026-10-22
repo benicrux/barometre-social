@@ -109,16 +109,19 @@ def _evol_txt(ecart: float, ind: dict, brut: float | None = None) -> str:
     return txt
 
 
-def _sparkline(s: pd.Series, freq: str, lissage: int) -> list:
+def _sparkline(s: pd.Series, freq: str, lissage: int) -> dict:
+    """Courbe miniature (5 ans en mensuel ou trimestriel, 12 ans en annuel) et ses bornes."""
     if freq == "M" and lissage > 1:
         s = s.rolling(lissage).mean().dropna()
     s = s.iloc[-60:] if freq == "M" else (s.iloc[-20:] if freq == "T" else s.iloc[-12:])
     if s.empty:
-        return []
+        return {"valeurs": [], "debut": "", "fin": ""}
     bas, haut = float(s.min()), float(s.max())
     if haut - bas < 1e-9:
-        return [50.0] * len(s)
-    return [round(10 + 80 * (float(v) - bas) / (haut - bas), 1) for v in s.values]
+        valeurs = [50.0] * len(s)
+    else:
+        valeurs = [round(10 + 80 * (float(v) - bas) / (haut - bas), 1) for v in s.values]
+    return {"valeurs": valeurs, "debut": str(s.index[0].year), "fin": str(s.index[-1].year)}
 
 
 def _indicateur(ind: dict, df: pd.DataFrame, prix: pd.Series | None) -> dict:

@@ -173,12 +173,21 @@ td.n,th.n{text-align:right}
 .ok{color:var(--delta-bon);font-weight:600}.ko{color:var(--delta-mauvais);font-weight:600}
 footer{margin-top:28px;color:var(--encre-3);font-size:12px}
 .methode p{font-size:13px;color:var(--encre-2);margin:8px 0}
-/* Onglets entre les deux pages */
-.onglets{display:flex;flex-wrap:wrap;gap:2px;margin:0 0 20px;border-bottom:1px solid var(--grille)}
-.onglets a{padding:8px 14px 9px;text-decoration:none;color:var(--encre-2);font-weight:600;
-  border-bottom:2px solid transparent;margin-bottom:-1px}
-.onglets a:hover{color:var(--encre-1)}
-.onglets a[aria-current="page"]{color:var(--encre-1);border-bottom-color:var(--encre-1)}
+/* Onglets entre les deux pages : bandeau collé en haut, bien visible */
+.onglets-bande{position:sticky;top:0;z-index:1100;margin:-18px -16px 22px;padding:10px 16px;
+  background:var(--plan);box-shadow:0 6px 12px -10px rgba(0,0,0,.25);
+  border-bottom:1px solid var(--grille)}
+.onglets{display:flex;gap:6px;padding:5px;background:var(--surface);border:1px solid var(--bord);
+  border-radius:14px;width:max-content;max-width:100%;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.onglets a{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 18px;border-radius:10px;
+  text-decoration:none;color:var(--encre-2);line-height:1.2;min-width:150px}
+.onglets a b{font-size:16px;font-weight:650}
+.onglets a .onglet-freq{font-size:12px;color:var(--encre-3)}
+.onglets a:hover{background:var(--plan);color:var(--encre-1)}
+.onglets a[aria-current="page"]{background:var(--encre-1);color:var(--surface)}
+.onglets a[aria-current="page"] .onglet-freq{color:color-mix(in oklab,var(--surface) 75%,transparent)}
+.onglets a:focus-visible{outline:2px solid var(--serie-1);outline-offset:2px}
+@media (max-width:520px){ .onglets{width:100%} .onglets a{flex:1;min-width:0;padding:8px 12px} }
 /* État du pays */
 .indic{list-style:none;margin:0;padding:0}
 .indic li{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,1.1fr) minmax(0,1.6fr) 130px 104px;
@@ -195,8 +204,8 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
   .indic .ver{justify-self:end}
 }
 .bilan-pays{font-size:16px;margin:0 0 14px}
-@media (max-width:520px){ .onglet-freq{display:none} }
 .indic li.sous-ind{border-top:0;padding-top:2px}
 .indic li.sous-ind .nom{padding-left:14px}
 .indic li.sous-ind .nom b{font-weight:500}
 .indic li.sous-ind .val{font-size:15px}
+.spk-axe{display:flex;justify-content:space-between;width:104px;font-size:10.5px;line-height:1;color:var(--encre-3);font-variant-numeric:tabular-nums;margin-top:2px}

@@ -237,21 +237,6 @@ def _insee(semaines):
 
 def _gdelt(fin, semaines):
     comps = []
-    presse = lire("gdelt_presse.csv", dtype={"valeur": float})
-    if not presse.empty:
-        presse["date"] = pd.to_datetime(presse["date"])
-        piv = presse.pivot_table(index="date", columns="serie", values="valeur")
-        sem = hebdo(piv, fin, somme=False).reindex(semaines)
-        for cle, spec in config.GDELT_REQUETES.items():
-            if cle not in sem:
-                continue
-            s = sem[cle]
-            z = zscore(np.log(s.where(s > 0)), config.FENETRE_SEMAINES, config.MIN_HISTORIQUE)
-            aff = s.map(lambda v: f"{100 * v:.2f} % des articles".replace(".", ",")
-                        if pd.notna(v) else "")
-            comps.append(Composante(f"gdelt_{cle}", spec["pilier"], spec["libelle"],
-                                    "GDELT (presse)", z * spec["sens"], aff,
-                                    int(s.notna().sum()), brut=s))
     evt = lire("gdelt_evenements.csv")
     types = pd.DataFrame()
     if not evt.empty:

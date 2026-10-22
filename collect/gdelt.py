@@ -1,4 +1,4 @@
-"""GDELT : couverture presse (API DOC) et événements de contestation géolocalisés."""
+"""GDELT : événements de contestation géolocalisés en France (fichiers quotidiens)."""
 from __future__ import annotations
 
 import csv
@@ -10,151 +10,16 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 
 import pandas as pd
-import requests
 
 import config
 from .common import ErreurSource, fusionner, get, hier, lire, session
 
-DOC = "https://api.gdeltproject.org/api/v2/doc/doc"
 V1 = "http://data.gdeltproject.org/events/{j:%Y%m%d}.export.CSV.zip"
 V2 = "http://data.gdeltproject.org/gdeltv2/{j:%Y%m%d}{hm}00.export.CSV.zip"
-PAUSE_DOC = 12      # GDELT freine les machines partagées de GitHub : on espace les appels
-ATTENTE_429 = 60    # pause quand GDELT répond « trop de requêtes »
-
-
-class TropDeRequetes(ErreurSource):
-    pass
 
 
 # --------------------------------------------------------------------------
-# 1. Couverture presse : part des articles français qui parlent d'un sujet
-# --------------------------------------------------------------------------
-def _requete_doc(s, q: str, mode: str, debut: date | None = None,
-                 fin: date | None = None) -> list[dict]:
-    params = {"query": q, "mode": mode, "format": "json"}
-    if debut:
-        params["startdatetime"] = f"{debut:%Y%m%d}000000"
-        params["enddatetime"] = f"{fin:%Y%m%d}235959"
-    else:
-        params["timespan"] = "3m"
-    for essai in range(2):
-        try:
-            r = s.get(DOC, params=params, timeout=90)
-        except requests.RequestException:
-            time.sleep(15)
-            continue
-        texte = r.text.strip()
-        if r.status_code == 429 or (not texte.startswith("{") and "limit" in texte[:300].lower()):
-            raise TropDeRequetes("GDELT refuse pour l'instant les requêtes venant de GitHub (erreur 429)")
-        if r.status_code >= 500:
-            time.sleep(20)
-            continue
-        if r.status_code != 200:
-            raise ErreurSource(f"HTTP {r.status_code}")
-        if texte.startswith("{"):
-            return r.json().get("timeline", [])
-        if not texte:
-            return []  # rien ne correspond à la recherche
-        raise ErreurSource(f"réponse GDELT : {texte[:160]}")
-    raise ErreurSource("API DOC de GDELT indisponible")
-
-
-def _lignes(cle: str, timeline: list[dict]) -> list[dict]:
-    jours: dict[str, dict] = defaultdict(lambda: {"valeur": 0.0, "norm": 0.0, "n": 0})
-    if not timeline:
-        return []
-    for point in timeline[0].get("data", []):
-        d = point.get("date", "")
-        if len(d) < 8:
-            continue
-        j = jours[f"{d[:4]}-{d[4:6]}-{d[6:8]}"]
-        j["valeur"] += float(point.get("value", 0) or 0)
-        j["norm"] += float(point.get("norm", 0) or 0)
-        j["n"] += 1
-    sortie = []
-    for d, v in jours.items():
-        if cle == "presse_ton":
-            if v["n"]:
-                sortie.append({"date": d, "serie": cle, "valeur": v["valeur"] / v["n"]})
-        elif v["norm"] > 0:
-            sortie.append({"date": d, "serie": cle, "valeur": v["valeur"] / v["norm"]})
-    return sortie
-
-
-def collecter_presse(s) -> str:
-    """Bonus : couverture presse via l'API DOC (souvent bloquée depuis GitHub).
-
-    La part de la contestation et la tonalité de l'actualité ne dépendent pas de
-    cette API : elles sont calculées à partir des fichiers d'événements.
-    """
-    existant = lire("gdelt_presse.csv", dtype=str)
-    cible = hier() - timedelta(days=365 * config.GDELT_PRESSE_ANNEES)
-    series = config.GDELT_REQUETES
-    limite = time.time() + 60 * getattr(config, "GDELT_PRESSE_BUDGET_MINUTES", 12)
-    lignes, notes, reussies, bloque = [], [], 0, False
-
-    # 1) les trois derniers mois de chaque série
-    for cle, spec in series.items():
-        try:
-            lignes += _lignes(cle, _requete_doc(s, spec["q"], "timelinevolraw"))
-            reussies += 1
-        except TropDeRequetes:
-            bloque = True
-            break
-        except Exception as e:
-            notes.append(f"{cle} : {str(e)[:90]}")
-        time.sleep(PAUSE_DOC)
-
-    # 2) l'historique, des tranches les plus récentes aux plus anciennes
-    taches, faites = [], 0
-    if not bloque:
-        borne = hier() - timedelta(days=85)
-        for cle in series:
-            deja = set(existant[existant["serie"] == cle]["date"]) if not existant.empty else set()
-            f = borne
-            while f > cible:
-                d = max(f - timedelta(days=89), cible)
-                jours = (f - d).days + 1
-                presents = sum((d + timedelta(days=k)).isoformat() in deja for k in range(jours))
-                if presents < 0.8 * jours:
-                    taches.append((f, cle, d))
-                f = d - timedelta(days=1)
-        taches.sort(key=lambda t: t[0], reverse=True)
-        for f, cle, d in taches:
-            if time.time() > limite:
-                break
-            try:
-                lignes += _lignes(cle, _requete_doc(s, series[cle]["q"], "timelinevolraw", d, f))
-                faites += 1
-            except TropDeRequetes:
-                bloque = True
-                break
-            except Exception as e:
-                notes.append(f"tranche {cle} {d}: {str(e)[:60]}")
-            time.sleep(PAUSE_DOC)
-
-    tout = fusionner(pd.DataFrame(lignes, columns=["date", "serie", "valeur"]),
-                     "gdelt_presse.csv", ["serie", "date"])
-    if reussies == 0:
-        raise ErreurSource(
-            "GDELT refuse pour l'instant les requêtes venant de GitHub (erreur 429) : "
-            "l'indicateur « Presse : licenciements » est en pause, nouvel essai au prochain "
-            "lancement. Le reste du tableau de bord n'est pas concerné." if bloque else
-            "API DOC indisponible ; " + " ; ".join(notes))
-    msg = f"{reussies}/{len(series)} séries à jour"
-    if not tout.empty:
-        msg += f" ; historique du {tout['date'].min()} au {tout['date'].max()}"
-    if taches:
-        msg += f" ; rattrapage : {faites}/{len(taches)} tranches"
-        if faites < len(taches):
-            msg += " (la suite au prochain lancement)"
-    if notes:
-        msg += " ; " + " ; ".join(notes)
-    return msg
-
-
-# --------------------------------------------------------------------------
-# 2. Événements de contestation (code CAMEO 14) en France
+# Événements de contestation (code CAMEO 14) en France
 # --------------------------------------------------------------------------
 # Position des colonnes dans les fichiers GDELT 1.0 (58 col.) et 2.0 (61 col.)
 COLONNES = {
