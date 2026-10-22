@@ -241,9 +241,9 @@
   <!-- Journal -->
   <section class="carte-ui" aria-labelledby="t-dec">
     <h2 id="t-dec">Journal des décisions et événements</h2>
-    <p class="aide">Repères placés sur les courbes pour voir ce qui a suivi. Ajoutez les vôtres dans le fichier <code>decisions.csv</code>{% if depot %} (<a href="https://github.com/{{ depot }}/edit/main/decisions.csv" rel="noopener">le modifier</a>){% endif %}.</p>
+    <p class="aide">Repères placés sur les courbes pour voir ce qui a suivi. Ajoutez les vôtres dans le fichier <code>decisions.csv</code>{% if depot %} (<a href="https://github.com/{{ depot }}/edit/main/decisions.csv" rel="noopener">le modifier</a>){% endif %}. Les repères « auto » sont ajoutés chaque semaine à partir des sujets émergents (manifestations, grèves, lois…) ; ceux qui doublent un repère du journal ou qui ont plus de deux ans disparaissent d'eux-mêmes.</p>
     {% if ind.decisions %}
-    <ul class="liste">{% for d in ind.decisions|reverse %}<li><span class="sec">{{ d.date }}</span><span>{{ d.texte }}</span><span class="sec">{{ d.type }}</span></li>{% endfor %}</ul>
+    <ul class="liste">{% for d in ind.decisions|reverse %}<li><span class="sec">{{ d.date }}</span><span>{{ d.texte }}</span><span class="sec">{{ d.type }}{% if d.auto %} · <span class="tag">auto</span>{% endif %}</span></li>{% endfor %}</ul>
     {% else %}<p class="vide">Aucun événement sur la période.</p>{% endif %}
   </section>
 </div>

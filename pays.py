@@ -123,7 +123,7 @@ def _sparkline(s: pd.Series, freq: str, lissage: int) -> list:
 
 def _indicateur(ind: dict, df: pd.DataFrame, prix: pd.Series | None) -> dict:
     base = {"id": ind["id"], "libelle": ind["libelle"], "aide": ind.get("aide", ""),
-            "section": ind["section"]}
+            "section": ind["section"], "sous": ind.get("sous", False)}
     r = _serie(df, ind["idbank"])
     if r is None:
         return {**base, "dispo": False}
@@ -193,6 +193,8 @@ def calculer_pays() -> dict | None:
     dispo = [i for i in tous if i["dispo"]]
     sections = [{"cle": k, "nom": nom, "indicateurs": [i for i in tous if i["section"] == k]}
                 for k, nom in config.PAYS_SECTIONS.items()]
+    for i in dispo:
+        i["nom_complet"] = ("Chômage " + i["libelle"].lstrip("… ")) if i["sous"] else i["libelle"]
     mieux = sorted([i for i in dispo if i["verdict"] == "mieux"], key=lambda i: -i["force"])
     moins = sorted([i for i in dispo if i["verdict"] == "moins bien"], key=lambda i: -i["force"])
     stables = [i for i in dispo if i["verdict"] == "stable"]

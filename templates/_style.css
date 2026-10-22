@@ -196,3 +196,7 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
 }
 .bilan-pays{font-size:16px;margin:0 0 14px}
 @media (max-width:520px){ .onglet-freq{display:none} }
+.indic li.sous-ind{border-top:0;padding-top:2px}
+.indic li.sous-ind .nom{padding-left:14px}
+.indic li.sous-ind .nom b{font-weight:500}
+.indic li.sous-ind .val{font-size:15px}

@@ -282,9 +282,75 @@ def detecter_sujets(s) -> str:
         tout = tout[tout["page"].isin(recents)].astype({"vues": float})
         tout = tout.drop_duplicates(["page", "semaine"], keep="last").sort_values(["page", "semaine"])
         tout.to_csv(DATA / "wiki_sujets.csv", index=False)
-    return (f"sujets émergents : {len(hausse)} pages en forte hausse examinées, "
+    try:
+        n_ev = maj_evenements_auto()
+    except Exception as e:  # le journal automatique ne doit jamais bloquer la collecte
+        print(f"  journal automatique indisponible : {e}", flush=True)
+        n_ev = 0
+    return (f"journal automatique : {n_ev} repère{'s' if n_ev > 1 else ''} ; "
+            f"sujets émergents : {len(hausse)} pages en forte hausse examinées, "
             f"{len(retenus)} retenues")
 
 
 def resolution_pages() -> dict:
     return lire_json("wiki_pages.json", {}) or {}
+
+
+# ---------------------------------------------------------------------------
+# Journal automatique : les sujets émergents qui sont des événements datés
+# (manifestation, grève, loi, motion de censure…) deviennent des repères.
+# ---------------------------------------------------------------------------
+MOTS_EVENEMENT = ["manifestation", "greve", "mouvement", "emeute", "blocage", "marche ",
+                  "journee de mobilisation", "motion de censure", "loi ", "projet de loi",
+                  "reforme", "crise", "attentat", "election", "referendum", "dissolution",
+                  "remaniement", "budget", "plan social", "accord", "convention citoyenne",
+                  "gouvernement "]
+MOIS_FR = ["janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet", "aout",
+           "septembre", "octobre", "novembre", "decembre"]
+TYPES_AUTO = {"mobilisation": "Mobilisation", "institutions": "Institutions",
+              "emploi": "Événement", "pouvoir_achat": "Événement"}
+
+
+def _evenement(titre: str, semaine: str) -> tuple[str, str] | None:
+    """(date, libellé) si le titre décrit un événement récent, sinon None."""
+    t = sans_accents(titre.replace("_", " ")).lower() + " "
+    if not any(m in t for m in MOTS_EVENEMENT):
+        return None
+    annee_sem = int(semaine[:4])
+    annees = [int(a) for a in re.findall(r"\b(20\d\d)\b", t)]
+    nomme = re.match(r"gouvernement [a-z]", t) is not None  # « Gouvernement Lecornu II »
+    if not nomme and not any(annee_sem - 1 <= a <= annee_sem for a in annees):
+        return None
+    m = re.search(r"\b(\d{1,2})(?:er)? (" + "|".join(MOIS_FR) + r") (20\d\d)\b", t)
+    jour = semaine
+    if m:
+        try:
+            jour = date(int(m.group(3)), MOIS_FR.index(m.group(2)) + 1, int(m.group(1))).isoformat()
+        except ValueError:
+            pass
+    return jour, titre.replace("_", " ")
+
+
+def maj_evenements_auto() -> int:
+    """Met à jour data/evenements_auto.csv à partir de l'historique des sujets
+    émergents ; retire les repères de plus de deux ans. Renvoie le nombre de repères."""
+    sujets = lire("sujets.csv", dtype=str)
+    anciens = lire("evenements_auto.csv", dtype=str)
+    lignes = []
+    for r in (sujets.itertuples() if not sujets.empty else []):
+        if r.pilier not in TYPES_AUTO:
+            continue
+        ev = _evenement(r.page, r.semaine)
+        if ev:
+            lignes.append({"date": ev[0], "evenement": ev[1], "type": TYPES_AUTO[r.pilier],
+                           "page": r.page})
+    tout = pd.concat([anciens, pd.DataFrame(lignes, columns=["date", "evenement", "type", "page"])],
+                     ignore_index=True)
+    if tout.empty:
+        return 0
+    # une page = un repère, à sa date la plus ancienne ; on oublie ce qui a plus de deux ans
+    tout = tout.sort_values("date").drop_duplicates("page", keep="first")
+    limite = (aujourdhui() - timedelta(days=730)).isoformat()
+    tout = tout[tout["date"] >= limite].sort_values("date")
+    tout[["date", "evenement", "type", "page"]].to_csv(DATA / "evenements_auto.csv", index=False)
+    return len(tout)

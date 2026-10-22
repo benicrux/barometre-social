@@ -515,16 +515,28 @@ def _types(types: pd.DataFrame, fin):
 
 
 def _decisions(debut, fin):
+    """Journal manuel (decisions.csv) + repères repérés automatiquement chaque semaine.
+    Un repère automatique est écarté s'il double un repère manuel du même type à moins
+    d'une semaine (le manuel l'emporte toujours)."""
+    lignes = []
     chemin = RACINE / "decisions.csv"
-    if not chemin.exists():
-        return []
-    df = pd.read_csv(chemin, comment="#", dtype=str).dropna(subset=["date"])
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df = df.dropna(subset=["date"]).sort_values("date")
-    df = df[(df["date"] >= debut) & (df["date"] <= fin)]
-    return [{"date": d.date().isoformat(), "semaine": fin_de_semaine(d).date().isoformat(),
-             "texte": str(t), "type": str(ty) if pd.notna(ty) else ""}
-            for d, t, ty in zip(df["date"], df["evenement"], df.get("type", [None] * len(df)))]
+    if chemin.exists():
+        df = pd.read_csv(chemin, comment="#", dtype=str).dropna(subset=["date"])
+        for d, t, ty in zip(df["date"], df["evenement"], df.get("type", [None] * len(df))):
+            lignes.append({"date": d, "texte": str(t), "type": str(ty) if pd.notna(ty) else "",
+                           "auto": False})
+    auto = lire("evenements_auto.csv", dtype=str)
+    for r in (auto.itertuples() if not auto.empty else []):
+        lignes.append({"date": r.date, "texte": r.evenement, "type": r.type, "auto": True})
+    for l in lignes:
+        l["ts"] = pd.to_datetime(l["date"], errors="coerce")
+    lignes = [l for l in lignes if pd.notna(l["ts"]) and debut <= l["ts"] <= fin]
+    manuels = [l for l in lignes if not l["auto"]]
+    garde = manuels + [l for l in lignes if l["auto"] and not any(
+        m["type"] == l["type"] and abs((m["ts"] - l["ts"]).days) <= 6 for m in manuels)]
+    garde.sort(key=lambda l: l["ts"])
+    return [{"date": l["ts"].date().isoformat(), "semaine": fin_de_semaine(l["ts"]).date().isoformat(),
+             "texte": l["texte"], "type": l["type"], "auto": l["auto"]} for l in garde]
 
 
 def calculer() -> dict:

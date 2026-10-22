@@ -29,7 +29,7 @@
 {% else %}
 
 {% macro ligne(i) %}
-  <li>
+  <li{% if i.sous %} class="sous-ind"{% endif %}>
     <span class="nom"><b>{{ i.libelle }}</b>{% if i.aide %}<br><span class="sec">{{ i.aide }}</span>{% endif %}</span>
     {% if i.dispo %}
     <span class="val">{{ i.grand }}<br><span class="sec">{{ i.periode }}</span></span>
@@ -52,7 +52,7 @@
     <div>
       <h3 class="sous-titre"><span class="{{ cls }}" aria-hidden="true">{{ ic }}</span> {{ titre }}</h3>
       {% if liste %}
-      <ul class="liste voy">{% for i in liste[:6] %}<li><span>{{ i.libelle }}<br><span class="sec">{{ i.evol }} {{ i.ref }}</span></span></li>{% endfor %}</ul>
+      <ul class="liste voy">{% for i in liste[:6] %}<li><span>{{ i.nom_complet }}<br><span class="sec">{{ i.evol }} {{ i.ref }}</span></span></li>{% endfor %}</ul>
       {% if liste|length > 6 %}<p class="aide" style="margin-top:6px">et {{ liste|length - 6 }} autre{{ 's' if liste|length - 6 > 1 }}, détaillé{{ 's' if liste|length - 6 > 1 }} plus bas.</p>{% endif %}
       {% else %}<p class="vide">Aucun cette fois-ci.</p>{% endif %}
     </div>
