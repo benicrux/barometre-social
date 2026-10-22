@@ -97,22 +97,21 @@ INSEE_SERIES = {
 # ---------------------------------------------------------------------------
 # GDELT : ce que la presse française raconte (gratuit, sans clé).
 # ---------------------------------------------------------------------------
+# Calculés à partir des fichiers quotidiens d'événements (fiables depuis GitHub)
+GDELT_PART = dict(
+    pilier="mobilisation", sens=+1, libelle="Place de la contestation dans l'actualité",
+)
+GDELT_TON = dict(
+    pilier="moral", sens=-1, libelle="Tonalité de l'actualité en France",
+)
+# En bonus, via l'API DOC de GDELT (souvent bloquée depuis GitHub : erreur 429)
 GDELT_REQUETES = {
-    "presse_mobilisation": dict(
-        pilier="mobilisation", sens=+1, libelle="Presse : grèves et manifestations",
-        q="(grève OR grèves OR manifestation OR manifestants OR blocage) "
-          "sourcecountry:france sourcelang:french",
-    ),
     "presse_emploi": dict(
         pilier="emploi", sens=+1, libelle="Presse : licenciements et plans sociaux",
         q='(licenciements OR "plan social" OR "suppressions de postes") '
           "sourcecountry:france sourcelang:french",
     ),
 }
-GDELT_TON = dict(
-    pilier="moral", sens=-1, libelle="Tonalité de la presse française",
-    q="(gouvernement OR économie OR salaires) sourcecountry:france sourcelang:french",
-)
 
 # Événements « contestation » (code CAMEO 14) géolocalisés en France
 GDELT_TYPES = {

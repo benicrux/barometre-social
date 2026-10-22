@@ -171,20 +171,16 @@ def _gdelt(fin, semaines):
         presse["date"] = pd.to_datetime(presse["date"])
         piv = presse.pivot_table(index="date", columns="serie", values="valeur")
         sem = hebdo(piv, fin, somme=False).reindex(semaines)
-        specs = dict(config.GDELT_REQUETES, presse_ton=config.GDELT_TON)
-        for cle, spec in specs.items():
+        for cle, spec in config.GDELT_REQUETES.items():
             if cle not in sem:
                 continue
             s = sem[cle]
-            if cle == "presse_ton":
-                z = zscore(s, config.FENETRE_SEMAINES, config.MIN_HISTORIQUE)
-                aff = s.map(lambda v: f"ton {v:+.2f}" if pd.notna(v) else "")
-            else:
-                z = zscore(np.log(s.where(s > 0)), config.FENETRE_SEMAINES,
-                           config.MIN_HISTORIQUE)
-                aff = s.map(lambda v: f"{100 * v:.2f} % des articles" if pd.notna(v) else "")
+            z = zscore(np.log(s.where(s > 0)), config.FENETRE_SEMAINES, config.MIN_HISTORIQUE)
+            aff = s.map(lambda v: f"{100 * v:.2f} % des articles".replace(".", ",")
+                        if pd.notna(v) else "")
             comps.append(Composante(f"gdelt_{cle}", spec["pilier"], spec["libelle"],
-                                    "GDELT", z * spec["sens"], aff, int(s.notna().sum())))
+                                    "GDELT (presse)", z * spec["sens"], aff,
+                                    int(s.notna().sum())))
     evt = lire("gdelt_evenements.csv")
     types = pd.DataFrame()
     if not evt.empty:
@@ -198,6 +194,26 @@ def _gdelt(fin, semaines):
         comps.append(Composante("gdelt_evenements", spec["pilier"], spec["libelle"],
                                 "GDELT", z * spec["sens"], aff, int(s.notna().sum())))
         types = sem
+        if "fr_articles" in sem:
+            base = sem["fr_articles"].where(sem["fr_articles"] > 0)
+            # part des articles consacrés à la contestation, parmi toute l'actualité en France
+            part = sem["articles"] / base
+            z = zscore(np.log(part.where(part > 0)), config.FENETRE_SEMAINES,
+                       config.MIN_HISTORIQUE)
+            aff = part.map(lambda v: f"{100 * v:.1f} % de l'actualité".replace(".", ",")
+                           if pd.notna(v) else "")
+            spec = config.GDELT_PART
+            comps.append(Composante("gdelt_part", spec["pilier"], spec["libelle"], "GDELT",
+                                    z * spec["sens"], aff, int(part.notna().sum())))
+            # tonalité moyenne des articles (négatif = actualité plus sombre)
+            if "fr_ton" in sem:
+                ton = sem["fr_ton"] / base
+                z = zscore(ton, config.FENETRE_SEMAINES, config.MIN_HISTORIQUE)
+                aff = ton.map(lambda v: f"ton {v:+.2f}".replace(".", ",").replace("-", "−")
+                              if pd.notna(v) else "")
+                spec = config.GDELT_TON
+                comps.append(Composante("gdelt_ton", spec["pilier"], spec["libelle"], "GDELT",
+                                        z * spec["sens"], aff, int(ton.notna().sum())))
     return comps, types
 
 
