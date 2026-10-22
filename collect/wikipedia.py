@@ -1,6 +1,7 @@
 """Pages vues Wikipédia (API Wikimedia, gratuite, sans clé)."""
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from datetime import date, timedelta
 from urllib.parse import quote
@@ -181,10 +182,18 @@ def _categories(s, titres: list[str]) -> dict[str, list[str]]:
     return res
 
 
-def classer(titre: str, categories: list[str]):
+def classer(titre: str, categories: list[str], annee: int | None = None):
     """-> (jauge, catégorie qui justifie le choix) ou None si hors sujet."""
+    ignorees = getattr(config, "SUJETS_CATEGORIES_IGNOREES", [])
+    categories = [c for c in categories
+                  if not sans_accents(c).startswith(tuple(ignorees))]
     norm = [sans_accents(c) for c in categories]
     t = sans_accents(titre.replace("_", " "))
+    # événement daté ancien (anniversaire, commémoration) : écarté
+    annee = annee or aujourdhui().year
+    annees = [int(a) for a in re.findall(r"\b(1[5-9]\d\d|20\d\d)\b", t)]
+    if annees and max(annees) < annee - getattr(config, "SUJETS_ANCIENNETE_MAX", 2):
+        return None
     if not (any("france" in c or "francais" in c for c in norm)
             or "france" in t or "francais" in t):
         return None
@@ -202,7 +211,10 @@ def classer(titre: str, categories: list[str]):
     if personne and not ({"institutions", "mobilisation"} & set(scores)):
         return None
     jauge = max(scores, key=scores.get)
-    return jauge, raison[jauge]
+    candidates = [brute for c, brute in zip(norm, categories)
+                  if any(m in c for m in config.SUJETS_MOTS[jauge])]
+    francaises = [c for c in candidates if "france" in sans_accents(c) or "francais" in sans_accents(c)]
+    return jauge, (francaises or candidates or [raison[jauge]])[0]
 
 
 def _historique_hebdo(s, page: str, debut: date) -> pd.DataFrame:
@@ -239,8 +251,16 @@ def detecter_sujets(s) -> str:
                             "raison": c[1], "vues": int(r.vues), "ratio": round(float(r.ratio), 2)})
         if len(retenus) >= config.SUJETS_MAX:
             break
-    fusionner(pd.DataFrame(retenus, columns=["semaine", "page", "pilier", "raison", "vues", "ratio"]),
-              "sujets.csv", ["semaine", "page"], garder_jours=730, col_date="semaine")
+    colonnes = ["semaine", "page", "pilier", "raison", "vues", "ratio"]
+    anciens = lire("sujets.csv", dtype=str)
+    if not anciens.empty:  # une relance remplace la détection de la même semaine
+        anciens = anciens[anciens["semaine"] != fin.date().isoformat()]
+    limite = (fin - pd.Timedelta(days=730)).date().isoformat()
+    tous = pd.concat([anciens, pd.DataFrame(retenus, columns=colonnes).astype(str)],
+                     ignore_index=True)
+    tous = tous[tous["semaine"] >= limite] if not tous.empty else tous
+    tous.reindex(columns=colonnes).sort_values(["semaine", "page"]).to_csv(
+        DATA / "sujets.csv", index=False)
 
     # historique hebdomadaire depuis 2015 des sujets retenus (pour « plus haut depuis… »)
     histo = lire("wiki_sujets.csv", dtype={"vues": float})
