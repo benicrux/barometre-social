@@ -28,5 +28,10 @@
   "source": "Territoires (chômage, pauvreté)",
   "ok": true,
   "message": "chômage : 100 départements, dernier trimestre 2026-Q2 (INSEE) ; pauvreté : millésime 2021 déjà en place"
+ },
+ {
+  "source": "État du pays (INSEE)",
+  "ok": true,
+  "message": "27 séries sur 27"
  }
 ]
