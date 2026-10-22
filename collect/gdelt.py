@@ -37,7 +37,7 @@ def _requete_doc(s, q: str, mode: str, debut: date | None = None,
         params["enddatetime"] = f"{fin:%Y%m%d}235959"
     else:
         params["timespan"] = "3m"
-    for essai in range(3):
+    for essai in range(2):
         try:
             r = s.get(DOC, params=params, timeout=90)
         except requests.RequestException:
@@ -45,8 +45,7 @@ def _requete_doc(s, q: str, mode: str, debut: date | None = None,
             continue
         texte = r.text.strip()
         if r.status_code == 429 or (not texte.startswith("{") and "limit" in texte[:300].lower()):
-            time.sleep(ATTENTE_429 * (essai + 1))
-            continue
+            raise TropDeRequetes("GDELT refuse pour l'instant les requêtes venant de GitHub (erreur 429)")
         if r.status_code >= 500:
             time.sleep(20)
             continue
@@ -57,7 +56,7 @@ def _requete_doc(s, q: str, mode: str, debut: date | None = None,
         if not texte:
             return []  # rien ne correspond à la recherche
         raise ErreurSource(f"réponse GDELT : {texte[:160]}")
-    raise TropDeRequetes("GDELT demande de ralentir (erreur 429)")
+    raise ErreurSource("API DOC de GDELT indisponible")
 
 
 def _lignes(cle: str, timeline: list[dict]) -> list[dict]:
@@ -83,62 +82,72 @@ def _lignes(cle: str, timeline: list[dict]) -> list[dict]:
 
 
 def collecter_presse(s) -> str:
+    """Bonus : couverture presse via l'API DOC (souvent bloquée depuis GitHub).
+
+    La part de la contestation et la tonalité de l'actualité ne dépendent pas de
+    cette API : elles sont calculées à partir des fichiers d'événements.
+    """
     existant = lire("gdelt_presse.csv", dtype=str)
     cible = hier() - timedelta(days=365 * config.GDELT_PRESSE_ANNEES)
-    series = dict(config.GDELT_REQUETES, presse_ton=config.GDELT_TON)
-    modes = {cle: "timelinetone" if cle == "presse_ton" else "timelinevolraw" for cle in series}
+    series = config.GDELT_REQUETES
     limite = time.time() + 60 * getattr(config, "GDELT_PRESSE_BUDGET_MINUTES", 12)
-    lignes, notes, reussies, freine = [], [], 0, False
+    lignes, notes, reussies, bloque = [], [], 0, False
 
-    # 1) D'abord l'essentiel : les trois derniers mois de chaque série
+    # 1) les trois derniers mois de chaque série
     for cle, spec in series.items():
         try:
-            lignes += _lignes(cle, _requete_doc(s, spec["q"], modes[cle]))
+            lignes += _lignes(cle, _requete_doc(s, spec["q"], "timelinevolraw"))
             reussies += 1
+        except TropDeRequetes:
+            bloque = True
+            break
         except Exception as e:
             notes.append(f"{cle} : {str(e)[:90]}")
         time.sleep(PAUSE_DOC)
 
-    # 2) Puis l'historique, par tranches de 3 mois, des plus récentes aux plus
-    #    anciennes ; ce qui n'est pas fini sera repris au lancement suivant
-    taches = []
-    borne = hier() - timedelta(days=85)
-    for cle in series:
-        deja = set(existant[existant["serie"] == cle]["date"]) if not existant.empty else set()
-        f = borne
-        while f > cible:
-            d = max(f - timedelta(days=89), cible)
-            jours = (f - d).days + 1
-            presents = sum((d + timedelta(days=k)).isoformat() in deja for k in range(jours))
-            if presents < 0.8 * jours:
-                taches.append((f, cle, d))
-            f = d - timedelta(days=1)
-    taches.sort(key=lambda t: t[0], reverse=True)
-    faites = 0
-    for f, cle, d in taches:
-        if time.time() > limite:
-            break
-        try:
-            lignes += _lignes(cle, _requete_doc(s, series[cle]["q"], modes[cle], d, f))
-            faites += 1
-        except TropDeRequetes:
-            freine = True
-            break
-        except Exception as e:
-            notes.append(f"tranche {cle} {d}: {str(e)[:60]}")
-        time.sleep(PAUSE_DOC)
+    # 2) l'historique, des tranches les plus récentes aux plus anciennes
+    taches, faites = [], 0
+    if not bloque:
+        borne = hier() - timedelta(days=85)
+        for cle in series:
+            deja = set(existant[existant["serie"] == cle]["date"]) if not existant.empty else set()
+            f = borne
+            while f > cible:
+                d = max(f - timedelta(days=89), cible)
+                jours = (f - d).days + 1
+                presents = sum((d + timedelta(days=k)).isoformat() in deja for k in range(jours))
+                if presents < 0.8 * jours:
+                    taches.append((f, cle, d))
+                f = d - timedelta(days=1)
+        taches.sort(key=lambda t: t[0], reverse=True)
+        for f, cle, d in taches:
+            if time.time() > limite:
+                break
+            try:
+                lignes += _lignes(cle, _requete_doc(s, series[cle]["q"], "timelinevolraw", d, f))
+                faites += 1
+            except TropDeRequetes:
+                bloque = True
+                break
+            except Exception as e:
+                notes.append(f"tranche {cle} {d}: {str(e)[:60]}")
+            time.sleep(PAUSE_DOC)
 
-    if not lignes and existant.empty:
-        raise ErreurSource("aucune donnée renvoyée par l'API DOC ; " + " ; ".join(notes))
     tout = fusionner(pd.DataFrame(lignes, columns=["date", "serie", "valeur"]),
                      "gdelt_presse.csv", ["serie", "date"])
-    msg = (f"{reussies}/{len(series)} séries à jour ; historique du {tout['date'].min()} "
-           f"au {tout['date'].max()}")
+    if reussies == 0:
+        raise ErreurSource(
+            "GDELT refuse pour l'instant les requêtes venant de GitHub (erreur 429) : "
+            "l'indicateur « Presse : licenciements » est en pause, nouvel essai au prochain "
+            "lancement. Le reste du tableau de bord n'est pas concerné." if bloque else
+            "API DOC indisponible ; " + " ; ".join(notes))
+    msg = f"{reussies}/{len(series)} séries à jour"
+    if not tout.empty:
+        msg += f" ; historique du {tout['date'].min()} au {tout['date'].max()}"
     if taches:
         msg += f" ; rattrapage : {faites}/{len(taches)} tranches"
         if faites < len(taches):
-            msg += (" (GDELT a demandé de ralentir" if freine else " (temps écoulé") + \
-                   ", la suite au prochain lancement)"
+            msg += " (la suite au prochain lancement)"
     if notes:
         msg += " ; " + " ; ".join(notes)
     return msg
@@ -149,8 +158,8 @@ def collecter_presse(s) -> str:
 # --------------------------------------------------------------------------
 # Position des colonnes dans les fichiers GDELT 1.0 (58 col.) et 2.0 (61 col.)
 COLONNES = {
-    58: dict(code=26, racine=28, articles=33, type=49, lieu=50, pays=51, lat=53, lon=54),
-    61: dict(code=26, racine=28, articles=33, type=51, lieu=52, pays=53, lat=56, lon=57),
+    58: dict(code=26, racine=28, articles=33, ton=34, type=49, lieu=50, pays=51, lat=53, lon=54),
+    61: dict(code=26, racine=28, articles=33, ton=34, type=51, lieu=52, pays=53, lat=56, lon=57),
 }
 
 
@@ -166,15 +175,24 @@ def _compter(contenus: list[bytes], agg: dict, lieux: dict) -> None:
     for contenu in contenus:
         for row in _lire_zip(contenu):
             c = COLONNES.get(len(row))
-            if not c or row[c["racine"]] != "14" or row[c["pays"]] != "FR":
+            if not c or row[c["pays"]] != "FR":
                 continue
+            try:
+                n_art = int(row[c["articles"]] or 0)
+                ton = float(row[c["ton"]] or 0)
+            except ValueError:
+                n_art, ton = 0, 0.0
+            # toute l'actualité située en France : volume et tonalité
+            agg["fr_evenements"] += 1
+            agg["fr_articles"] += n_art
+            agg["fr_ton"] += ton * n_art
+            if row[c["racine"]] != "14":
+                continue
+            # actions de contestation
             type_evt = config.GDELT_TYPES.get(row[c["code"]][:3], "Autres")
             agg["total"] += 1
             agg[type_evt] += 1
-            try:
-                agg["articles"] += int(row[c["articles"]] or 0)
-            except ValueError:
-                pass
+            agg["articles"] += n_art
             if row[c["type"]] not in ("", "1") and row[c["lat"]] and row[c["lon"]]:
                 lieu = lieux.setdefault(row[c["lieu"]], {"lat": row[c["lat"]],
                                                          "lon": row[c["lon"]], "n": 0})
@@ -205,7 +223,12 @@ def _telecharger_jour(j: date) -> list[bytes]:
 
 def collecter_evenements(s) -> str:
     existant = lire("gdelt_evenements.csv", dtype=str)
-    deja = set(existant["date"]) if not existant.empty else set()
+    deja = set()
+    if not existant.empty:
+        # un jour est complet s'il contient aussi les mesures de toute l'actualité
+        complet = existant["fr_articles"].notna() if "fr_articles" in existant else False
+        deja = set(existant.loc[complet, "date"]) if "fr_articles" in existant else set()
+    anciens = set(existant["date"]) if not existant.empty else set()
     fin = hier()
     debut = fin - timedelta(days=config.GDELT_RATTRAPAGE_JOURS - 1)
     # les jours manquants, du plus récent au plus ancien : la semaine écoulée d'abord
@@ -225,7 +248,9 @@ def collecter_evenements(s) -> str:
                     continue
                 agg, lieux = defaultdict(int), {}
                 _compter(contenus, agg, lieux)
-                ligne = {"date": j.isoformat(), "total": agg["total"], "articles": agg["articles"]}
+                ligne = {"date": j.isoformat(), "total": agg["total"], "articles": agg["articles"],
+                         "fr_evenements": agg["fr_evenements"], "fr_articles": agg["fr_articles"],
+                         "fr_ton": round(agg["fr_ton"], 1)}
                 for nom in list(config.GDELT_TYPES.values()) + ["Autres"]:
                     ligne[nom] = agg[nom]
                 lignes.append(ligne)
@@ -237,8 +262,11 @@ def collecter_evenements(s) -> str:
               "gdelt_lieux.csv", ["date", "lieu"], garder_jours=70)
     if tout.empty:
         raise ErreurSource("aucun fichier d'événements GDELT disponible")
-    msg = (f"{len(lignes)} jours ajoutés ; historique du {tout['date'].min()} "
+    msg = (f"{len(lignes)} jours traités ; historique du {tout['date'].min()} "
            f"au {tout['date'].max()}")
+    recalcules = sum(1 for l in lignes if l["date"] in anciens)
+    if recalcules:
+        msg += f" ; mise à niveau : {recalcules} jours recalculés avec la tonalité"
     restants = len(a_faire) - faits
     if restants > 0:
         msg += f" ; {restants} jours plus anciens récupérés aux prochains lancements"
