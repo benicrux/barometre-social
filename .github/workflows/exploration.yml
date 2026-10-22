@@ -5,19 +5,45 @@ on:
 permissions:
   contents: write
 jobs:
-  explorer:
+  recuperer:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        part:
+          - "gdelt 2017-01-01 2018-12-31"
+          - "gdelt 2019-01-01 2020-12-31"
+          - "gdelt 2021-01-01 2022-12-31"
+          - "gdelt 2023-01-01 2024-12-31"
+          - "gdelt 2025-01-01 2026-03-25"
+          - "carburants"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install requests
-      - run: python explorer.py
+      - run: pip install -r requirements.txt
+      - run: python historique.py sortie ${{ matrix.part }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hist-${{ strategy.job-index }}
+          path: sortie/*.csv
+  rassembler:
+    needs: recuperer
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          path: telecharge
       - run: |
+          mkdir -p exploration/historique
+          find telecharge -name '*.csv' -exec cp {} exploration/historique/ \;
+          ls -la exploration/historique
           git config user.name "barometre-bot"
           git config user.email "actions@users.noreply.github.com"
           git add exploration
-          git commit -m "Résultats de l'exploration [skip ci]" || true
+          git commit -m "Historique pour le test sur le passé [skip ci]" || true
           git push origin HEAD:exploration-resultats --force
