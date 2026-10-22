@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 
 import pandas as pd
+import requests
 
 import config
 from .common import ErreurSource, fusionner, get, hier, lire, session
@@ -17,7 +18,12 @@ from .common import ErreurSource, fusionner, get, hier, lire, session
 DOC = "https://api.gdeltproject.org/api/v2/doc/doc"
 V1 = "http://data.gdeltproject.org/events/{j:%Y%m%d}.export.CSV.zip"
 V2 = "http://data.gdeltproject.org/gdeltv2/{j:%Y%m%d}{hm}00.export.CSV.zip"
-PAUSE_DOC = 6  # GDELT demande au plus une requête toutes les 5 secondes
+PAUSE_DOC = 12      # GDELT freine les machines partagées de GitHub : on espace les appels
+ATTENTE_429 = 60    # pause quand GDELT répond « trop de requêtes »
+
+
+class TropDeRequetes(ErreurSource):
+    pass
 
 
 # --------------------------------------------------------------------------
@@ -31,16 +37,27 @@ def _requete_doc(s, q: str, mode: str, debut: date | None = None,
         params["enddatetime"] = f"{fin:%Y%m%d}235959"
     else:
         params["timespan"] = "3m"
-    for essai in range(4):
-        r = get(s, DOC, params=params, pause=8)
+    for essai in range(3):
+        try:
+            r = s.get(DOC, params=params, timeout=90)
+        except requests.RequestException:
+            time.sleep(15)
+            continue
         texte = r.text.strip()
+        if r.status_code == 429 or (not texte.startswith("{") and "limit" in texte[:300].lower()):
+            time.sleep(ATTENTE_429 * (essai + 1))
+            continue
+        if r.status_code >= 500:
+            time.sleep(20)
+            continue
+        if r.status_code != 200:
+            raise ErreurSource(f"HTTP {r.status_code}")
         if texte.startswith("{"):
             return r.json().get("timeline", [])
-        if "limit" in texte.lower():  # « merci de limiter à 1 requête / 5 s »
-            time.sleep(10 * (essai + 1))
-            continue
+        if not texte:
+            return []  # rien ne correspond à la recherche
         raise ErreurSource(f"réponse GDELT : {texte[:160]}")
-    raise ErreurSource("GDELT limite les requêtes, réessai la semaine prochaine")
+    raise TropDeRequetes("GDELT demande de ralentir (erreur 429)")
 
 
 def _lignes(cle: str, timeline: list[dict]) -> list[dict]:
@@ -69,40 +86,59 @@ def collecter_presse(s) -> str:
     existant = lire("gdelt_presse.csv", dtype=str)
     cible = hier() - timedelta(days=365 * config.GDELT_PRESSE_ANNEES)
     series = dict(config.GDELT_REQUETES, presse_ton=config.GDELT_TON)
-    lignes, notes, reussies = [], [], 0
+    modes = {cle: "timelinetone" if cle == "presse_ton" else "timelinevolraw" for cle in series}
+    limite = time.time() + 60 * getattr(config, "GDELT_PRESSE_BUDGET_MINUTES", 12)
+    lignes, notes, reussies, freine = [], [], 0, False
+
+    # 1) D'abord l'essentiel : les trois derniers mois de chaque série
     for cle, spec in series.items():
-        mode = "timelinetone" if cle == "presse_ton" else "timelinevolraw"
-        # a) rattrapage de l'historique, par tranches de 3 mois : seules les tranches
-        #    encore incomplètes sont demandées (donc une seule fois en pratique)
+        try:
+            lignes += _lignes(cle, _requete_doc(s, spec["q"], modes[cle]))
+            reussies += 1
+        except Exception as e:
+            notes.append(f"{cle} : {str(e)[:90]}")
+        time.sleep(PAUSE_DOC)
+
+    # 2) Puis l'historique, par tranches de 3 mois, des plus récentes aux plus
+    #    anciennes ; ce qui n'est pas fini sera repris au lancement suivant
+    taches = []
+    borne = hier() - timedelta(days=85)
+    for cle in series:
         deja = set(existant[existant["serie"] == cle]["date"]) if not existant.empty else set()
-        d, n, borne = cible, 0, hier() - timedelta(days=85)
-        while d < borne:
-            f = min(d + timedelta(days=89), borne)
+        f = borne
+        while f > cible:
+            d = max(f - timedelta(days=89), cible)
             jours = (f - d).days + 1
             presents = sum((d + timedelta(days=k)).isoformat() in deja for k in range(jours))
             if presents < 0.8 * jours:
-                try:
-                    lignes += _lignes(cle, _requete_doc(s, spec["q"], mode, d, f))
-                    n += 1
-                except Exception as e:
-                    notes.append(f"historique {cle} interrompu ({str(e)[:80]})")
-                    break
-                time.sleep(PAUSE_DOC)
-            d = f + timedelta(days=1)
-        if n:
-            notes.append(f"historique {cle} : {n} tranches récupérées")
-        # b) les trois derniers mois (chaque semaine)
+                taches.append((f, cle, d))
+            f = d - timedelta(days=1)
+    taches.sort(key=lambda t: t[0], reverse=True)
+    faites = 0
+    for f, cle, d in taches:
+        if time.time() > limite:
+            break
         try:
-            lignes += _lignes(cle, _requete_doc(s, spec["q"], mode))
-            reussies += 1
+            lignes += _lignes(cle, _requete_doc(s, series[cle]["q"], modes[cle], d, f))
+            faites += 1
+        except TropDeRequetes:
+            freine = True
+            break
         except Exception as e:
-            notes.append(f"{cle} : {str(e)[:100]}")
+            notes.append(f"tranche {cle} {d}: {str(e)[:60]}")
         time.sleep(PAUSE_DOC)
-    if not lignes:
+
+    if not lignes and existant.empty:
         raise ErreurSource("aucune donnée renvoyée par l'API DOC ; " + " ; ".join(notes))
-    tout = fusionner(pd.DataFrame(lignes), "gdelt_presse.csv", ["serie", "date"])
-    msg = (f"{reussies}/{len(series)} séries à jour, historique depuis "
-           f"{tout['date'].min()}, jusqu'au {tout['date'].max()}")
+    tout = fusionner(pd.DataFrame(lignes, columns=["date", "serie", "valeur"]),
+                     "gdelt_presse.csv", ["serie", "date"])
+    msg = (f"{reussies}/{len(series)} séries à jour ; historique du {tout['date'].min()} "
+           f"au {tout['date'].max()}")
+    if taches:
+        msg += f" ; rattrapage : {faites}/{len(taches)} tranches"
+        if faites < len(taches):
+            msg += (" (GDELT a demandé de ralentir" if freine else " (temps écoulé") + \
+                   ", la suite au prochain lancement)"
     if notes:
         msg += " ; " + " ; ".join(notes)
     return msg
