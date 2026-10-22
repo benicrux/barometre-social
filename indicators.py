@@ -435,6 +435,41 @@ def _terrain():
     }
 
 
+def _questions_moral(mensuel: pd.DataFrame):
+    """Ce qui pèse sur le moral et ce qui tient : chaque question de l'enquête INSEE
+    comparée à sa moyenne depuis 2010, avec son évolution sur un mois."""
+    qs = getattr(config, "INSEE_QUESTIONS", {})
+    if mensuel is None or mensuel.empty:
+        return None
+    lignes, mois = [], None
+    for cle, spec in qs.items():
+        if cle not in mensuel:
+            continue
+        s = mensuel[cle].dropna()
+        if len(s) < 24:
+            continue
+        mois = s.index[-1] if mois is None else max(mois, s.index[-1])
+        z = (s.iloc[-1] - s.mean()) / s.std() * spec["bon"]
+        d = (s.iloc[-1] - s.iloc[-2]) * spec["bon"]
+        if z <= -1:
+            etat = "nettement plus pessimiste que d'habitude"
+        elif z <= -0.3:
+            etat = "un peu plus pessimiste que d'habitude"
+        elif z < 0.3:
+            etat = "comme d'habitude"
+        elif z < 1:
+            etat = "un peu plus optimiste que d'habitude"
+        else:
+            etat = "nettement plus optimiste que d'habitude"
+        lignes.append({"libelle": spec["libelle"], "z": round(float(z), 2), "etat": etat,
+                       "mois": ("stable" if abs(d) < 2 else ("mieux" if d > 0 else "moins bien"))})
+    if len(lignes) < 4:
+        return None
+    lignes.sort(key=lambda l: l["z"])
+    n = min(3, len(lignes) // 2)
+    return {"mois": libelle_mois(mois), "pese": lignes[:n], "tient": lignes[::-1][:n]}
+
+
 def _carte(fin: pd.Timestamp):
     lieux = lire("gdelt_lieux.csv")
     if lieux.empty:
@@ -632,6 +667,7 @@ def calculer() -> dict:
         "tensions": tensions[:config.LISTE_MAX],
         "detentes": detentes[:config.LISTE_MAX],
         "calmes": calmes[:config.LISTE_MAX],
+        "moral_detail": _questions_moral(insee_mensuel),
         "terrain": _terrain(),
         "montent": _montent(fin),
         "sujets": _sujets(fin),

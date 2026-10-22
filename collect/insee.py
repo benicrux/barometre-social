@@ -95,7 +95,8 @@ def selectionner(series: list[dict]) -> tuple[dict, list[dict]]:
                           "correction": a.get("CORRECTION", ""), "freq": a.get("FREQ", ""),
                           "n_obs": len(se["obs"]), "retenue": ""})
     choix = {}
-    for cle, spec in config.INSEE_SERIES.items():
+    a_trouver = {**config.INSEE_SERIES, **getattr(config, "INSEE_QUESTIONS", {})}
+    for cle, spec in a_trouver.items():
         meilleurs = []
         for i, se in enumerate(series):
             a = se["attrs"]
@@ -111,7 +112,7 @@ def selectionner(series: list[dict]) -> tuple[dict, list[dict]]:
         if meilleurs:
             _, i = max(meilleurs)
             choix[cle] = series[i]
-            catalogue[i]["retenue"] = cle
+            catalogue[i]["retenue"] = ";".join(filter(None, [catalogue[i]["retenue"], cle]))
     return choix, catalogue
 
 
@@ -141,7 +142,9 @@ def collecter(s) -> str:
     tout = fusionner(pd.DataFrame(lignes), "insee.csv", ["serie", "date"])
     dernier = tout["date"].max()[:7]
     manquantes = [c for c in config.INSEE_SERIES if c not in choix]
-    msg = f"{len(choix)} séries ({source}), dernier mois {dernier}"
+    n_q = sum(c in choix for c in getattr(config, "INSEE_QUESTIONS", {}))
+    msg = (f"{len([c for c in choix if c in config.INSEE_SERIES])} séries ({source}), "
+           f"dernier mois {dernier} ; {n_q} questions détaillées")
     if manquantes:
         msg += f" ; non trouvées : {', '.join(manquantes)}"
     return msg

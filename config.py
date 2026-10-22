@@ -133,6 +133,32 @@ INSEE_SERIES = {
     ),
 }
 
+# Les questions de l'enquête, pour voir ce qui pèse sur le moral et ce qui tient.
+# Affichage seulement (elles ne changent pas les scores).
+# bon = +1 : plus le solde est haut, mieux c'est ; -1 : l'inverse.
+INSEE_QUESTIONS = {
+    "q_niveau_vie_passe": dict(libelle="Niveau de vie en France, l'année passée",
+                               inclure=["niveau de vie passe en france"], exclure=[], bon=+1),
+    "q_niveau_vie_futur": dict(libelle="Niveau de vie en France, l'année à venir",
+                               inclure=["niveau de vie futur en france"], exclure=[], bon=+1),
+    "q_finances_passees": dict(libelle="Ses propres finances, l'année passée",
+                               inclure=["situation financiere passee"], exclure=[], bon=+1),
+    "q_finances_futures": dict(libelle="Ses propres finances, l'année à venir",
+                               inclure=["situation financiere future"], exclure=[], bon=+1),
+    "q_gros_achats": dict(libelle="Le bon moment pour faire de gros achats",
+                          inclure=["achats importants"], exclure=[], bon=+1),
+    "q_epargne_actuelle": dict(libelle="Capacité à mettre de l'argent de côté",
+                               inclure=["capacite d'epargne actuelle"], exclure=[], bon=+1),
+    "q_epargne_future": dict(libelle="Capacité à épargner dans l'année à venir",
+                             inclure=["capacite d'epargne future"], exclure=[], bon=+1),
+    "q_chomage": dict(libelle="Peur que le chômage augmente",
+                      inclure=["evolution future du chomage"], exclure=["proportion"], bon=-1),
+    "q_prix_passes": dict(libelle="Hausse des prix ressentie",
+                          inclure=["evolution passee des prix"], exclure=[], bon=-1),
+    "q_prix_futurs": dict(libelle="Hausse des prix attendue",
+                          inclure=["evolution future des prix"], exclure=[], bon=-1),
+}
+
 # ---------------------------------------------------------------------------
 # GDELT : ce que la presse française raconte (gratuit, sans clé).
 # ---------------------------------------------------------------------------

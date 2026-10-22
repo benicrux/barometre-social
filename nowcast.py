@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from collect.common import aujourdhui, fusionner, lire
-from indicators import libelle_mois
+from indicators import MOIS_COURT, libelle_mois
 
 LAMBDA = 5.0
 N_TEST = 36
@@ -75,8 +75,10 @@ def prevoir(ind: dict) -> dict:
         e_nai = [abs(r["naif"] - r["reel"]) for r in tests]
         rmse_m = math.sqrt(np.mean(np.square(e_mod)))
         rmse_n = math.sqrt(np.mean(np.square(e_nai)))
+        # écart moyen, en points : la mesure affichée (plus parlante que la RMSE)
+        ecart_m, ecart_n = float(np.mean(e_mod)), float(np.mean(e_nai))
     else:
-        rmse_m = rmse_n = None
+        rmse_m = rmse_n = ecart_m = ecart_n = None
 
     # Prévision du mois cible
     prevision, semaines = None, 0
@@ -98,8 +100,9 @@ def prevoir(ind: dict) -> dict:
     journal = lire("previsions.csv")
 
     tableau = []
-    for r in tests[-6:]:
-        ligne = {"mois": libelle_mois(r["mois"]), "prevision": round(r["prevision"], 1),
+    for r in tests[-12:]:
+        ligne = {"mois": libelle_mois(r["mois"]), "court": MOIS_COURT[r["mois"].month - 1],
+                 "prevision": round(r["prevision"], 1),
                  "naif": round(r["naif"], 1), "reel": round(r["reel"], 1), "mode": "test"}
         if not journal.empty:
             j = journal[journal["mois_cible"] == r["mois"].date().isoformat()]
@@ -111,19 +114,19 @@ def prevoir(ind: dict) -> dict:
         ligne["ecart_naif"] = round(ligne["naif"] - ligne["reel"], 1)
         tableau.append(ligne)
 
+    pts = lambda x: f"{x:.1f}".replace(".", ",") + (" point" if x < 2 else " points")
     if rmse_m is None:
-        verdict = "Test du modèle impossible pour l'instant."
-        bat = None
-    elif rmse_m < rmse_n * 0.95:
-        bat = True
-        verdict = (f"Sur {len(tests)} mois testés, le modèle se trompe en moyenne de "
-                   f"{rmse_m:.1f} point, contre {rmse_n:.1f} pour la prévision naïve : "
-                   "les signaux Wikipédia apportent une information réelle.")
+        verdict, bat = "Fiabilité pas encore mesurable.", None
     else:
-        bat = False
-        verdict = (f"Sur {len(tests)} mois testés, le modèle ({rmse_m:.1f} point d'erreur) "
-                   f"ne fait pas mieux que la prévision naïve ({rmse_n:.1f}). "
-                   "À prendre comme une indication, pas une prévision.")
+        bat = rmse_m < rmse_n * 0.95
+        verdict = (f"Fiabilité : sur les {len(tests)} derniers mois, l'estimation est tombée en "
+                   f"moyenne à {pts(ecart_m)} du vrai chiffre. ")
+        if bat:
+            verdict += (f"C'est mieux que de simplement reprendre le chiffre du mois "
+                        f"précédent ({pts(ecart_n)} d'écart).")
+        else:
+            verdict += (f"Ce n'est pas mieux que de simplement reprendre le chiffre du mois "
+                        f"précédent ({pts(ecart_n)} d'écart) : à prendre comme une indication.")
 
     tendance = None
     if prevision is not None:
@@ -133,5 +136,6 @@ def prevoir(ind: dict) -> dict:
     base.update(prevision=prevision, semaines=semaines, tendance=tendance,
                 rmse_modele=None if rmse_m is None else round(rmse_m, 2),
                 rmse_naif=None if rmse_n is None else round(rmse_n, 2),
-                n_test=len(tests), bat_naif=bat, verdict=verdict, tableau=tableau)
+                n_test=len(tests), bat_naif=bat, verdict=verdict, tableau=tableau,
+                court_cible=MOIS_COURT[cible.month - 1])
     return base
