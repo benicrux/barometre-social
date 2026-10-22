@@ -1,0 +1,2 @@
+Ce dossier est rempli automatiquement chaque lundi par le robot GitHub Actions.
+Ne pas modifier à la main (sauf pour tout recommencer : supprimer les fichiers .csv).

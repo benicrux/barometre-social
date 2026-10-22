@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baromètre social</title>
+<meta name="description" content="Tableau de bord hebdomadaire du climat social en France, à partir de données publiques gratuites.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root{
+  color-scheme: light;
+  --plan:#f9f9f7; --surface:#fcfcfb; --encre-1:#0b0b0b; --encre-2:#52514e; --encre-3:#6f6e69;
+  --grille:#e1e0d9; --axe:#c3c2b7; --bord:rgba(11,11,11,.10);
+  --serie-1:#2a78d6; --spark:#a9a8a1;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b; --none:#a9a8a1;
+  --delta-bon:#006300; --delta-mauvais:#b42f2f;
+  --pole-calme:#2a78d6; --pole-tension:#e34948; --neutre:#f0efec;
+  --bleu-fr:#002395; --rouge-fr:#ed2939;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --plan:#0d0d0d; --surface:#1a1a19; --encre-1:#f0efec; --encre-2:#c3c2b7; --encre-3:#9a9891;
+    --grille:#2c2c2a; --axe:#383835; --bord:rgba(255,255,255,.10);
+    --serie-1:#3987e5; --spark:#5c5b56; --none:#5c5b56;
+    --delta-bon:#0ca30c; --delta-mauvais:#f07a7a;
+    --pole-calme:#3987e5; --pole-tension:#e66767; --neutre:#383835;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plan:#0d0d0d; --surface:#1a1a19; --encre-1:#f0efec; --encre-2:#c3c2b7; --encre-3:#9a9891;
+  --grille:#2c2c2a; --axe:#383835; --bord:rgba(255,255,255,.10);
+  --serie-1:#3987e5; --spark:#5c5b56; --none:#5c5b56;
+  --delta-bon:#0ca30c; --delta-mauvais:#f07a7a;
+  --pole-calme:#3987e5; --pole-tension:#e66767; --neutre:#383835;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--plan);color:var(--encre-1);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:inherit;text-decoration-color:var(--axe);text-underline-offset:2px}
+a:hover{text-decoration-color:currentColor}
+.tricolore{height:4px;background:linear-gradient(90deg,var(--bleu-fr) 0 33.3%,#fff 33.3% 66.6%,var(--rouge-fr) 66.6%)}
+.page{max-width:1180px;margin:0 auto;padding:28px 16px 64px}
+header.tete{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:22px}
+.surtitre{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--encre-3);font-weight:600}
+h1{font-size:28px;line-height:1.15;margin:4px 0 4px;font-weight:650;letter-spacing:-.01em}
+.sous{color:var(--encre-2);margin:0}
+.meta{color:var(--encre-3);font-size:13px;text-align:right}
+.demo{background:color-mix(in oklab,var(--warning) 22%,var(--surface));border:1px solid color-mix(in oklab,var(--warning) 60%,transparent);
+  border-radius:10px;padding:10px 14px;margin-bottom:18px;font-weight:600}
+.carte-ui{background:var(--surface);border:1px solid var(--bord);border-radius:14px;padding:20px}
+h2{font-size:17px;margin:0 0 2px;font-weight:650}
+.aide{color:var(--encre-3);font-size:13px;margin:0 0 14px}
+.grille-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px;margin-top:16px}
+section{margin-top:16px}
+
+/* Météo sociale */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:24px;align-items:center}
+@media (max-width:760px){.hero{grid-template-columns:1fr}}
+.hero-chiffre{display:flex;align-items:baseline;gap:6px}
+.hero-chiffre .n{font-size:72px;line-height:1;font-weight:650;letter-spacing:-.02em}
+.hero-chiffre .sur{font-size:20px;color:var(--encre-3)}
+.hero .ligne{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-top:10px}
+.hero .spark{width:100%;height:auto}
+.legende-hero{font-size:13px;color:var(--encre-3);margin-top:6px}
+
+/* Puces de statut : icône + libellé, jamais la couleur seule */
+.puce{--c:var(--none);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+  padding:3px 10px 3px 6px;border-radius:999px;background:color-mix(in oklab,var(--c) 16%,var(--surface));white-space:nowrap}
+.puce svg{width:15px;height:15px;fill:var(--c);flex:none}
+.puce .ic-trait{stroke:var(--surface);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.puce-warning .ic-trait{stroke:#3a2a00}
+.puce-good{--c:var(--good)}.puce-warning{--c:var(--warning)}.puce-serious{--c:var(--serious)}.puce-critical{--c:var(--critical)}
+
+.delta{font-size:13px;color:var(--encre-2);white-space:nowrap}
+.delta-mauvais{color:var(--delta-mauvais)}.delta-bon{color:var(--delta-bon)}
+
+/* Jauges */
+.jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px;margin-top:16px}
+.jauge{display:flex;flex-direction:column;gap:8px}
+.jauge .nom{font-size:14px;font-weight:600;color:var(--encre-2)}
+.jauge .val{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.jauge .val .n{font-size:38px;font-weight:650;line-height:1}
+.jauge .moteurs{font-size:13px;color:var(--encre-2);min-height:2.6em}
+.jauge .moteurs b{font-weight:600;color:var(--encre-1)}
+.spark-ligne{fill:none;stroke:var(--spark);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.spark-ref{stroke:var(--grille);stroke-width:1}
+.spark-point{fill:var(--serie-1);stroke:var(--surface);stroke-width:2}
+details summary{cursor:pointer;color:var(--encre-2);font-size:13px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸ ";color:var(--encre-3)}
+details[open] summary::before{content:"▾ "}
+.compo{list-style:none;margin:8px 0 0;padding:0;font-size:13px}
+.compo li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:6px 0;border-top:1px solid var(--grille)}
+.compo .src{color:var(--encre-3);font-size:12px}
+.compo .z{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.tag{display:inline-block;font-size:11px;color:var(--encre-3);border:1px solid var(--grille);border-radius:6px;padding:0 5px;margin-left:4px}
+
+/* Listes et tableaux */
+.liste{list-style:none;margin:0;padding:0}
+.liste li{display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:baseline;padding:9px 0;border-top:1px solid var(--grille)}
+.liste li:first-child{border-top:0}
+.liste .sec{color:var(--encre-3);font-size:13px}
+.liste .num{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;white-space:nowrap}
+.fleche-h{color:var(--delta-mauvais)}.fleche-b{color:var(--delta-bon)}
+.vide{color:var(--encre-3);font-style:italic;margin:6px 0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-weight:600;color:var(--encre-3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--axe);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--grille);font-variant-numeric:tabular-nums}
+td.n,th.n{text-align:right}
+.defile{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.prev-tete{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:flex-end;margin-bottom:12px}
+.prev-tete .n{font-size:44px;font-weight:650;line-height:1}
+.prev-tete .lib{font-size:13px;color:var(--encre-3)}
+.verdict{font-size:13px;color:var(--encre-2);border-left:3px solid var(--grille);padding:2px 0 2px 10px;margin:4px 0 12px}
+
+/* Carte */
+#carte{height:360px;border-radius:10px;border:1px solid var(--bord);background:var(--neutre)}
+.types{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:12px}
+.types div{font-size:13px;color:var(--encre-2)}
+.types b{display:block;font-size:22px;color:var(--encre-1);font-weight:650}
+.leaflet-container{font:inherit}
+
+/* Graphique historique */
+.filtres{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.filtres button{font:inherit;font-size:13px;border:1px solid var(--grille);background:transparent;color:var(--encre-2);
+  border-radius:999px;padding:4px 12px;cursor:pointer}
+.filtres button[aria-pressed="true"]{background:var(--encre-1);color:var(--surface);border-color:var(--encre-1)}
+#graph{position:relative;width:100%;height:280px;outline:none}
+#graph:focus-visible{box-shadow:0 0 0 2px var(--serie-1);border-radius:6px}
+#graph svg{display:block}
+.g-grille{stroke:var(--grille);stroke-width:1}
+.g-seuil{stroke:var(--axe);stroke-width:1}
+.g-txt{fill:var(--encre-3);font-size:11px;font-variant-numeric:tabular-nums}
+.g-ligne{fill:none;stroke:var(--serie-1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.g-aire{fill:var(--serie-1);opacity:.1}
+.g-evt{stroke:var(--encre-3);stroke-width:1}
+.g-evt-pt{fill:var(--surface);stroke:var(--encre-2);stroke-width:1.5}
+.g-evt-n{fill:var(--encre-1);font-size:10px;font-weight:700;text-anchor:middle}
+.g-croix{stroke:var(--encre-2);stroke-width:1}
+.g-pt{fill:var(--serie-1);stroke:var(--surface);stroke-width:2}
+.bulle{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--bord);border-radius:8px;
+  padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:150px;display:none;z-index:2}
+.bulle .t{color:var(--encre-3);margin-bottom:4px}
+.bulle .r{display:flex;align-items:center;gap:6px;justify-content:space-between}
+.bulle .r b{font-size:14px}
+.bulle .cle{display:inline-block;width:12px;height:2px;background:var(--serie-1);border-radius:1px}
+.bulle .e{margin-top:6px;color:var(--encre-2);max-width:240px}
+.evts{list-style:none;padding:0;margin:12px 0 0;font-size:13px;color:var(--encre-2)}
+.evts li{display:flex;gap:8px;padding:3px 0}
+.evts .no{flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--encre-2);font-size:10px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;color:var(--encre-1)}
+.mensuel td.c{text-align:center;font-weight:600;min-width:48px;border-bottom:2px solid var(--surface);border-left:2px solid var(--surface)}
+.mensuel th.m{text-align:center;font-weight:500}
+.mensuel td.lib{white-space:nowrap;font-weight:600}
+.echelle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--encre-3);margin-top:10px}
+.echelle .barre{height:8px;width:180px;border-radius:4px;
+  background:linear-gradient(90deg,var(--pole-calme),var(--neutre),var(--pole-tension))}
+.ok{color:var(--delta-bon);font-weight:600}.ko{color:var(--delta-mauvais);font-weight:600}
+footer{margin-top:28px;color:var(--encre-3);font-size:12px}
+.methode p{font-size:13px;color:var(--encre-2);margin:8px 0}
+</style>
+</head>
+<body>
+<div class="tricolore" aria-hidden="true"></div>
+<div class="page">
+
+{% if demo %}<div class="demo">Démonstration : les chiffres de cette page sont fictifs. Ils servent seulement à montrer la mise en page.</div>{% endif %}
+
+<header class="tete">
+  <div>
+    <div class="surtitre">Baromètre social · France</div>
+    <h1>Tableau de bord de la semaine</h1>
+    <p class="sous">Semaine {{ ind.semaine }}</p>
+  </div>
+  <div class="meta">Calculé le {{ calcule }}<br>Mise à jour automatique chaque lundi</div>
+</header>
+
+<!-- Météo sociale -->
+<section class="carte-ui hero" aria-labelledby="t-meteo">
+  <div>
+    <h2 id="t-meteo">Météo sociale</h2>
+    <div class="hero-chiffre"><span class="n">{{ ind.meteo.score|fr }}</span><span class="sur">/ 100</span></div>
+    <div class="ligne">
+      {{ ind.meteo.statut|puce }}
+      {{ ind.meteo.delta1|delta(" vs semaine préc.") }}
+      {{ ind.meteo.delta4|delta(" sur 4 semaines") }}
+    </div>
+    <p class="legende-hero">50 = une semaine ordinaire par rapport aux deux dernières années. Au-delà de 75, la tension est nette ; au-delà de 90, c'est exceptionnel.</p>
+  </div>
+  <div>
+    {{ ind.meteo.sparkline|sparkline(560, 110) }}
+    <div class="legende-hero">Les 26 dernières semaines · la ligne fine marque 50</div>
+  </div>
+</section>
+
+<!-- Les cinq jauges -->
+<div class="jauges">
+{% for p in ind.piliers %}
+  <section class="carte-ui jauge" aria-label="{{ p.nom }}">
+    <div class="nom">{{ p.nom }}</div>
+    <div class="val"><span class="n">{{ p.score|fr }}</span>{{ p.statut|puce }}</div>
+    <div>{{ p.delta1|delta(" vs sem. préc.") }}</div>
+    {{ p.sparkline|sparkline(180, 34) }}
+    <div class="moteurs">
+      {% if p.moteurs %}Ce qui tire : {% for m in p.moteurs %}<b>{{ m.libelle }}</b> ({{ m.z|sigma }}){% if not loop.last %}, {% endif %}{% endfor %}
+      {% elif p.score is none %}Pas encore de données.
+      {% else %}Rien d'anormal cette semaine.{% endif %}
+    </div>
+    {% if p.composantes %}
+    <details>
+      {% set nc = p.composantes|length %}<summary>Détail ({{ nc }} indicateur{{ 's' if nc > 1 }})</summary>
+      <ul class="compo">
+      {% for c in p.composantes %}
+        <li>
+          <span>{{ c.libelle }}{% if not c.actif %}<span class="tag">en construction · {{ c.historique }} sem.</span>{% elif c.court %}<span class="tag">historique court</span>{% endif %}
+            <br><span class="src">{{ c.source }}{% if c.valeur %} · {{ c.valeur }}{% endif %}</span></span>
+          <span class="z">{{ c.z|sigma }}</span>
+        </li>
+      {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </section>
+{% endfor %}
+</div>
+
+<div class="grille-2">
+  <!-- Voyants -->
+  <section class="carte-ui" aria-labelledby="t-voy">
+    <h2 id="t-voy">Les voyants de la semaine</h2>
+    <p class="aide">Ce qui s'écarte nettement de la normale (au moins 2 écarts-types), et les jauges qui bondissent.</p>
+    {% if ind.voyants %}
+    <ul class="liste">
+      {% for v in ind.voyants %}
+      <li>
+        <span class="{{ 'fleche-h' if v.sens == 'hausse' else 'fleche-b' }}" aria-hidden="true">{{ '▲' if v.sens == 'hausse' else '▼' }}</span>
+        <span>{{ v.libelle }}<br><span class="sec">{{ v.pilier }}{% if v.valeur %} · {{ v.valeur }}{% endif %} · {{ 'tension en hausse' if v.sens == 'hausse' else 'détente' }}</span></span>
+        <span class="num">{{ v.z|sigma if v.z is not none else '' }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="vide">Aucun voyant allumé cette semaine.</p>{% endif %}
+  </section>
+
+  <!-- Prévu vs réalisé -->
+  <section class="carte-ui" aria-labelledby="t-prev">
+    <h2 id="t-prev">Moral des ménages : prévu vs réalisé</h2>
+    <p class="aide">Estimation du prochain indicateur de confiance de l'INSEE, avant sa publication.</p>
+    {% if prev.dispo %}
+      <div class="prev-tete">
+        <div><div class="lib">Prévision pour {{ prev.mois_cible }}</div><div class="n">{{ prev.prevision|fr(1) if prev.prevision is not none else '–' }}</div></div>
+        <div><div class="lib">Dernier chiffre publié ({{ prev.dernier.mois }})</div><div class="n" style="font-size:28px">{{ prev.dernier.valeur|fr }}</div></div>
+        {% if prev.tendance %}<div class="lib">Tendance attendue : <b>{{ {'hausse':'en hausse','baisse':'en baisse','stable':'stable'}[prev.tendance] }}</b>{% if prev.semaines %} · {{ prev.semaines }} semaine{{ 's' if prev.semaines > 1 }} de signaux{% endif %}</div>{% endif %}
+      </div>
+      <p class="verdict">{{ prev.verdict }}</p>
+      {% if prev.tableau %}
+      <div class="defile"><table>
+        <thead><tr><th>Mois</th><th class="n">Prévu</th><th class="n">Naïf</th><th class="n">Réel</th><th class="n">Écart</th><th></th></tr></thead>
+        <tbody>
+        {% for r in prev.tableau|reverse %}
+          <tr><td>{{ r.mois }}</td><td class="n">{{ r.prevision|fr(1) }}</td><td class="n">{{ r.naif|fr(0) }}</td><td class="n">{{ r.reel|fr(0) }}</td>
+            <td class="n">{{ r.ecart|fr(1, true) }}</td><td><span class="tag">{{ 'en direct' if r.mode == 'direct' else 'test' }}</span></td></tr>
+        {% endfor %}
+        </tbody></table></div>
+      <p class="aide" style="margin-top:8px">« Naïf » : on suppose que le chiffre ne bouge pas. « Test » : prévision recalculée comme si on était à l'époque ; « en direct » : prévision réellement affichée ici avant la publication.</p>
+      {% endif %}
+    {% else %}<p class="vide">{{ prev.raison }}</p>{% endif %}
+  </section>
+</div>
+
+<div class="grille-2">
+  <!-- Carte -->
+  <section class="carte-ui" aria-labelledby="t-carte">
+    <h2 id="t-carte">Carte des tensions</h2>
+    <p class="aide">Actions de contestation relevées dans la presse cette semaine (source GDELT, codage automatique : ordres de grandeur, pas un décompte officiel).</p>
+    {% if ind.carte %}
+      <div id="carte" role="img" aria-label="Carte des lieux de contestation de la semaine"></div>
+    {% else %}<p class="vide">Pas encore de données géolocalisées.</p>{% endif %}
+    {% if ind.types %}
+    <div class="types">
+      {% for t in ind.types %}<div><b>{{ t.valeur|fr }}</b>{{ t.nom }}<br><span class="sec" style="color:var(--encre-3)">moy. 4 sem. : {{ t.moyenne|fr }}</span></div>{% endfor %}
+    </div>
+    {% endif %}
+    {% if ind.carte %}
+    <details style="margin-top:10px"><summary>Lieux les plus cités</summary>
+      <table><thead><tr><th>Lieu</th><th class="n">Actions</th></tr></thead><tbody>
+      {% for l in ind.carte[:12] %}<tr><td>{{ l.lieu }}</td><td class="n">{{ l.n }}</td></tr>{% endfor %}
+      </tbody></table>
+    </details>
+    {% endif %}
+  </section>
+
+  <!-- Ce qui monte -->
+  <section class="carte-ui" aria-labelledby="t-monte">
+    <h2 id="t-monte">Ce qui monte sur Wikipédia</h2>
+    <p class="aide">Les pages dont la lecture a le plus progressé cette semaine par rapport aux quatre précédentes : ce qui occupe les esprits, tous sujets confondus.</p>
+    {% if ind.montent %}
+    <ol class="liste">
+      {% for m in ind.montent %}
+      <li><span class="sec">{{ loop.index }}</span><span><a href="{{ m.url }}" rel="noopener">{{ m.titre }}</a><br><span class="sec">{{ m.vues|fr }} vues</span></span><span class="num">×{{ m.ratio|fr(1) }}</span></li>
+      {% endfor %}
+    </ol>
+    {% else %}<p class="vide">Classement pas encore disponible.</p>{% endif %}
+    {% if ind.pages_suivies %}
+    <details style="margin-top:10px"><summary>Les {{ ind.pages_suivies|length }} pages suivies par le baromètre</summary>
+      <div class="defile"><table><thead><tr><th>Page</th><th>Jauge</th><th class="n">Vues</th><th class="n">vs 4 sem.</th><th class="n">Écart</th></tr></thead><tbody>
+      {% for p in ind.pages_suivies|sort(attribute='z', reverse=true) if p.z is not none %}<tr><td><a href="{{ p.url }}" rel="noopener">{{ p.page }}</a></td><td>{{ p.pilier }}</td><td class="n">{{ p.vues|fr }}</td><td class="n">{{ (p.evol|fr(0, true) ~ ' %') if p.evol is not none else '–' }}</td><td class="n">{{ p.z|sigma }}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </details>
+    {% endif %}
+  </section>
+</div>
+
+<!-- Historique -->
+<section class="carte-ui" aria-labelledby="t-hist">
+  <h2 id="t-hist">Les deux dernières années</h2>
+  <p class="aide">Score hebdomadaire (0-100) et événements marquants ; la ligne plus marquée à 75 est le seuil de tension. Survolez ou utilisez les flèches du clavier pour lire une semaine.</p>
+  <div class="filtres" role="group" aria-label="Indicateur affiché">
+    <button type="button" data-serie="meteo" aria-pressed="true">Météo sociale</button>
+    {% for p in ind.piliers %}<button type="button" data-serie="{{ p.cle }}" aria-pressed="false">{{ p.nom }}</button>{% endfor %}
+  </div>
+  <div id="graph" tabindex="0" role="img" aria-label="Évolution hebdomadaire du score sur deux ans"><div class="bulle" id="bulle"></div></div>
+  <ol class="evts" id="evts"></ol>
+  <details style="margin-top:8px"><summary>Voir les données</summary>
+    <div class="defile"><table><thead><tr><th>Semaine se terminant le</th><th class="n">Météo</th>{% for p in ind.piliers %}<th class="n">{{ p.nom }}</th>{% endfor %}</tr></thead><tbody>
+    {% for h in ind.historique|reverse %}<tr><td>{{ h.semaine }}</td><td class="n">{{ h.meteo|fr }}</td>{% for p in ind.piliers %}<td class="n">{{ h[p.cle]|fr }}</td>{% endfor %}</tr>{% endfor %}
+    </tbody></table></div>
+  </details>
+</section>
+
+<!-- Mois par mois -->
+<section class="carte-ui" aria-labelledby="t-mens">
+  <h2 id="t-mens">Mois par mois</h2>
+  <p class="aide">Moyenne des scores hebdomadaires de chaque mois.</p>
+  <div class="defile"><table class="mensuel">
+    <thead><tr><th></th>{% for m in ind.mensuel %}<th class="m">{{ m.mois }}{% if m.en_cours %}*{% endif %}</th>{% endfor %}</tr></thead>
+    <tbody>
+      <tr><td class="lib">Météo sociale</td>{% for m in ind.mensuel %}<td class="c" {{ m.meteo|cellule }}>{{ m.meteo|fr }}</td>{% endfor %}</tr>
+      {% for p in ind.piliers %}<tr><td class="lib">{{ p.nom }}</td>{% for m in ind.mensuel %}<td class="c" {{ m[p.cle]|cellule }}>{{ m[p.cle]|fr }}</td>{% endfor %}</tr>{% endfor %}
+    </tbody>
+  </table></div>
+  <div class="echelle"><span>calme</span><span class="barre" aria-hidden="true"></span><span>tension</span><span>· * mois en cours</span></div>
+</section>
+
+<div class="grille-2">
+  <!-- Journal -->
+  <section class="carte-ui" aria-labelledby="t-dec">
+    <h2 id="t-dec">Journal des décisions et événements</h2>
+    <p class="aide">Repères placés sur les courbes pour voir ce qui a suivi. Ajoutez les vôtres dans le fichier <code>decisions.csv</code>{% if depot %} (<a href="https://github.com/{{ depot }}/edit/main/decisions.csv" rel="noopener">le modifier</a>){% endif %}.</p>
+    {% if ind.decisions %}
+    <ul class="liste">{% for d in ind.decisions|reverse %}<li><span class="sec">{{ d.date }}</span><span>{{ d.texte }}</span><span class="sec">{{ d.type }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="vide">Aucun événement sur la période.</p>{% endif %}
+  </section>
+
+  <!-- Santé des sources -->
+  <section class="carte-ui methode" aria-labelledby="t-src">
+    <h2 id="t-src">Santé des sources</h2>
+    <p class="aide">Résultat de la collecte de ce lundi.</p>
+    <ul class="liste">
+      {% for s in statuts %}<li><span class="{{ 'ok' if s.ok else 'ko' }}">{{ '✓' if s.ok else '✗' }}</span><span>{{ s.source }}<br><span class="sec">{{ s.message }}</span></span><span></span></li>{% endfor %}
+    </ul>
+    <details style="margin-top:10px"><summary>Comment c'est calculé</summary>
+      <p>Chaque indicateur est comparé à ses deux années précédentes : on mesure de combien d'écarts-types (σ) la semaine s'écarte de la normale, en orientant le signe pour que « + » veuille toujours dire « plus de tension » (par exemple, une baisse de la confiance des ménages compte en +).</p>
+      <p>Une jauge est la moyenne de ses indicateurs ; la météo sociale est la moyenne des cinq jauges. Les scores 0-100 traduisent ces écarts : 50 = normal, 73 ≈ +1σ, 88 ≈ +2σ, 95 ≈ +3σ.</p>
+      <p>Sources gratuites : pages vues Wikipédia (Wikimedia), enquête de conjoncture auprès des ménages (INSEE), presse et événements géolocalisés (GDELT), prix des carburants (data.economie.gouv.fr). Un indicateur hebdomadaire ne compte qu'après {{ min_hist }} semaines d'historique ; avant, il est affiché « en construction ».</p>
+    </details>
+  </section>
+</div>
+
+<footer>Baromètre social · données publiques, calcul automatique, aucune donnée personnelle. Ce n'est ni un sondage ni une prévision officielle.</footer>
+</div>
+
+<script id="donnees" type="application/json">{{ donnees_js|tojson }}</script>
+<script>
+(function(){
+  "use strict";
+  var D = JSON.parse(document.getElementById("donnees").textContent);
+  var MOIS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+  var H = D.historique || [];
+  var serie = "meteo";
+
+  function dateFr(iso){ var p = iso.split("-"); return (+p[2]) + " " + MOIS[+p[1]-1] + " " + p[0]; }
+  function nombre(v){ return v == null ? "–" : String(Math.round(v)); }
+
+  // événements numérotés, dans l'ordre chronologique
+  var idx = {}; H.forEach(function(h, i){ idx[h.semaine] = i; });
+  var evts = (D.decisions || []).filter(function(e){ return idx[e.semaine] != null; });
+  var liste = document.getElementById("evts");
+  evts.forEach(function(e, k){
+    var li = document.createElement("li");
+    var no = document.createElement("span"); no.className = "no"; no.textContent = String(k + 1);
+    var tx = document.createElement("span"); tx.textContent = dateFr(e.date) + " — " + e.texte;
+    li.appendChild(no); li.appendChild(tx); liste.appendChild(li);
+  });
+
+  var box = document.getElementById("graph"), bulle = document.getElementById("bulle");
+  var geo = null, actif = null;
+
+  function dessiner(){
+    var W = box.clientWidth, Hh = box.clientHeight;
+    var m = {l: 34, r: 14, t: 26, b: 26};
+    var n = H.length; if (!n) { box.insertAdjacentHTML("afterbegin", '<p class="vide">Historique pas encore disponible.</p>'); return; }
+    var X = function(i){ return m.l + (n > 1 ? i * (W - m.l - m.r) / (n - 1) : 0); };
+    var Y = function(v){ return m.t + (100 - v) / 100 * (Hh - m.t - m.b); };
+    var s = '<svg width="' + W + '" height="' + Hh + '" aria-hidden="true">';
+    [0, 25, 50, 75, 100].forEach(function(v){
+      s += '<line class="' + (v === 75 ? 'g-seuil' : 'g-grille') + '" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
+      s += '<text class="g-txt" x="' + (m.l - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+    });
+    // repères de mois (un sur trois)
+    var vus = {};
+    H.forEach(function(h, i){
+      var p = h.semaine.split("-"), cle = p[0] + p[1];
+      if (vus[cle] || (+p[1] - 1) % 3 !== 0 || +p[2] > 7) return; vus[cle] = 1;
+      s += '<text class="g-txt" x="' + X(i) + '" y="' + (Hh - 6) + '" text-anchor="middle">' + MOIS[+p[1]-1] + (p[1] === "01" ? " " + p[0] : "") + '</text>';
+    });
+    // événements : les repères trop proches sont décalés vers la droite
+    var dernierX = -99;
+    evts.forEach(function(e, k){
+      var x = X(idx[e.semaine]), xr = Math.max(x, dernierX + 19);
+      dernierX = xr;
+      s += '<line class="g-evt" x1="' + x + '" x2="' + x + '" y1="' + (m.t - 4) + '" y2="' + (Hh - m.b) + '"/>';
+      if (xr !== x) s += '<line class="g-evt" x1="' + x + '" x2="' + xr + '" y1="' + (m.t - 4) + '" y2="' + (m.t - 8) + '"/>';
+      s += '<circle class="g-evt-pt" cx="' + xr + '" cy="' + (m.t - 13) + '" r="8"/>';
+      s += '<text class="g-evt-n" x="' + xr + '" y="' + (m.t - 9.5) + '">' + (k + 1) + '</text>';
+    });
+    // courbe
+    var d = "", aire = "", seg = [];
+    function fermer(){ if (seg.length){ d += "M" + seg.join(" L"); aire += "M" + seg[0].split(",")[0] + "," + Y(0) + " L" + seg.join(" L") + " L" + seg[seg.length-1].split(",")[0] + "," + Y(0) + "Z"; } seg = []; }
+    H.forEach(function(h, i){ var v = h[serie]; if (v == null) { fermer(); } else { seg.push(X(i).toFixed(1) + "," + Y(v).toFixed(1)); } });
+    fermer();
+    s += '<path class="g-aire" d="' + aire + '"/><path class="g-ligne" d="' + d + '"/>';
+    var der = -1; for (var i = n - 1; i >= 0; i--) { if (H[i][serie] != null) { der = i; break; } }
+    if (der >= 0) {
+      s += '<circle class="g-pt" cx="' + X(der) + '" cy="' + Y(H[der][serie]) + '" r="4.5"/>';
+      s += '<text class="g-txt" style="fill:var(--encre-1);font-weight:600" x="' + (X(der) - 8) + '" y="' + (Y(H[der][serie]) - 9) + '" text-anchor="end">' + nombre(H[der][serie]) + '</text>';
+    }
+    s += '<g id="croix" style="display:none"><line class="g-croix" id="cx-l" y1="' + m.t + '" y2="' + (Hh - m.b) + '"/><circle class="g-pt" id="cx-p" r="4.5"/></g>';
+    s += '</svg>';
+    var ancien = box.querySelector("svg"); if (ancien) ancien.remove();
+    box.insertAdjacentHTML("afterbegin", s);
+    geo = {X: X, Y: Y, m: m, W: W, Hh: Hh, n: n};
+    if (actif != null) montrer(actif);
+  }
+
+  function montrer(i){
+    if (!geo) return;
+    actif = Math.max(0, Math.min(geo.n - 1, i));
+    var h = H[actif], v = h[serie];
+    var g = document.getElementById("croix"); g.style.display = "";
+    var x = geo.X(actif);
+    var l = document.getElementById("cx-l"); l.setAttribute("x1", x); l.setAttribute("x2", x);
+    var p = document.getElementById("cx-p");
+    if (v == null) { p.style.display = "none"; } else { p.style.display = ""; p.setAttribute("cx", x); p.setAttribute("cy", geo.Y(v)); }
+    bulle.textContent = "";
+    var t = document.createElement("div"); t.className = "t"; t.textContent = "Semaine se terminant le " + dateFr(h.semaine); bulle.appendChild(t);
+    var r = document.createElement("div"); r.className = "r";
+    var gauche = document.createElement("span"); var k = document.createElement("span"); k.className = "cle"; gauche.appendChild(k);
+    gauche.appendChild(document.createTextNode(" " + D.piliers[serie]));
+    var b = document.createElement("b"); b.textContent = nombre(v);
+    r.appendChild(gauche); r.appendChild(b); bulle.appendChild(r);
+    evts.forEach(function(e, k2){ if (e.semaine === h.semaine) { var ev = document.createElement("div"); ev.className = "e"; ev.textContent = (k2 + 1) + ". " + e.texte; bulle.appendChild(ev); } });
+    bulle.style.display = "block";
+    var bx = x + 14; if (bx + bulle.offsetWidth > geo.W) bx = x - 14 - bulle.offsetWidth;
+    bulle.style.left = Math.max(0, bx) + "px"; bulle.style.top = "8px";
+  }
+  function cacher(){ actif = null; bulle.style.display = "none"; var g = document.getElementById("croix"); if (g) g.style.display = "none"; }
+
+  box.addEventListener("pointermove", function(ev){
+    if (!geo) return;
+    var rect = box.getBoundingClientRect(), x = ev.clientX - rect.left;
+    var i = Math.round((x - geo.m.l) / ((geo.W - geo.m.l - geo.m.r) / Math.max(geo.n - 1, 1)));
+    montrer(i);
+  });
+  box.addEventListener("pointerleave", cacher);
+  box.addEventListener("focus", function(){ montrer(H.length - 1); });
+  box.addEventListener("blur", cacher);
+  box.addEventListener("keydown", function(ev){
+    if (ev.key === "ArrowLeft") { montrer((actif == null ? H.length : actif) - 1); ev.preventDefault(); }
+    if (ev.key === "ArrowRight") { montrer((actif == null ? 0 : actif) + 1); ev.preventDefault(); }
+  });
+  document.querySelectorAll(".filtres button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      serie = btn.getAttribute("data-serie");
+      document.querySelectorAll(".filtres button").forEach(function(b){ b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+      dessiner();
+    });
+  });
+  var attente; window.addEventListener("resize", function(){ clearTimeout(attente); attente = setTimeout(dessiner, 120); });
+  dessiner();
+
+  // Carte (Leaflet) : ajoutée seulement si la bibliothèque a pu se charger
+  window.addEventListener("load", function(){
+    var el = document.getElementById("carte");
+    if (!el || !window.L || !(D.carte || []).length) return;
+    var css = getComputedStyle(document.documentElement);
+    var carte = L.map(el, {scrollWheelZoom: false}).setView([46.6, 2.4], 5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {maxZoom: 12, attribution: "© contributeurs OpenStreetMap"}).addTo(carte);
+    var max = Math.max.apply(null, D.carte.map(function(p){ return p.n; }));
+    D.carte.forEach(function(p){
+      var info = document.createElement("span"); info.textContent = p.lieu + " : " + p.n + " action" + (p.n > 1 ? "s" : "");
+      L.circleMarker([p.lat, p.lon], {
+        radius: 4 + 14 * Math.sqrt(p.n / max), weight: 2,
+        color: css.getPropertyValue("--surface").trim() || "#fff",
+        fillColor: css.getPropertyValue("--serie-1").trim() || "#2a78d6", fillOpacity: .75
+      }).bindTooltip(info).addTo(carte);
+    });
+  });
+})();
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Journal des décisions et événements : une ligne par repère (date au format AAAA-MM-JJ).
+# Ajoutez vos propres lignes ; elles apparaîtront sur les courbes au prochain calcul.
+date,evenement,type
+2018-11-17,Première journée du mouvement des Gilets jaunes,Mobilisation
+2019-12-05,Début de la grève contre la réforme des retraites,Mobilisation
+2020-03-17,Premier confinement,Événement
+2023-01-19,Première journée de mobilisation contre la réforme des retraites,Mobilisation
+2023-03-16,Recours au 49.3 pour la réforme des retraites,Décision
+2023-06-27,Émeutes urbaines après la mort d'un adolescent à Nanterre,Événement
+2024-06-09,Dissolution de l'Assemblée nationale,Décision
+2024-12-04,Censure du gouvernement Barnier,Institutions
+2025-09-08,Le gouvernement Bayrou perd la confiance de l'Assemblée,Institutions
+2025-09-10,Mouvement « Bloquons tout »,Mobilisation
+2026-02-28,Guerre au Moyen-Orient et flambée des carburants,Événement
