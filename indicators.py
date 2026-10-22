@@ -102,11 +102,81 @@ def _f(x, nd=2):
 # Construction des composantes
 # --------------------------------------------------------------------------
 class Composante:
-    def __init__(self, id, pilier, libelle, source, z, affichage, historique):
+    def __init__(self, id, pilier, libelle, source, z, affichage, historique,
+                 brut=None, ratio=True, mensuel=None, bas=True):
         self.id, self.pilier, self.libelle, self.source = id, pilier, libelle, source
         self.z = z                    # série hebdo orientée (+ = tension)
         self.affichage = affichage    # série hebdo de textes lisibles
         self.historique = historique  # nb de semaines de données
+        self.brut = brut              # valeurs brutes hebdo (pour « vs normale » et « niveau »)
+        self.ratio = ratio            # un écart en % a-t-il un sens ? (non pour un solde ou un ton)
+        self.mensuel = mensuel        # série mensuelle brute (INSEE)
+        self.bas = bas                # un creux est-il remarquable ? (non pour Wikipédia,
+                                      # dont l'audience baisse d'année en année)
+
+
+# --------------------------------------------------------------------------
+# Traduction en clair : « vs normale » (%) et niveau en mots
+# --------------------------------------------------------------------------
+def vs_normale(brut, fin, fenetre=None):
+    """Écart en % entre la semaine et la médiane des deux années précédentes."""
+    if brut is None:
+        return None
+    s = brut.loc[:fin].dropna()
+    if len(s) <= config.MIN_HISTORIQUE or s.index[-1] != fin:
+        return None
+    mediane = s.iloc[:-1].tail(fenetre or config.FENETRE_SEMAINES).median()
+    if pd.isna(mediane) or mediane <= 0:
+        return None
+    return _f(100 * (s.iloc[-1] / mediane - 1), 0)
+
+
+def niveau(brut, fin=None, fenetre=None, recent=None, minimum=None, bas=True):
+    """Situe la dernière valeur en mots : « plus haut depuis mars 2023 », etc."""
+    if brut is None:
+        return None
+    s = brut.dropna()
+    if fin is not None:
+        s = s.loc[:fin]
+        if s.empty or s.index[-1] != fin:
+            return None
+    if len(s) <= (minimum or config.MIN_HISTORIQUE):
+        return None
+    v, passe = s.iloc[-1], s.iloc[:-1]
+    fen = passe.tail(fenetre or config.FENETRE_SEMAINES)
+    plus_bas = 100 * (fen < v).mean()   # part du temps où c'était plus bas
+    plus_haut = 100 * (fen > v).mean()
+    limite = s.index[-1] - (recent or pd.Timedelta(weeks=26))
+    if plus_bas >= 90:
+        avant = passe[passe >= v]
+        if avant.empty:
+            return f"record (données depuis {passe.index[0].year})"
+        if avant.index[-1] < limite:
+            return f"plus haut depuis {libelle_mois(avant.index[-1])}"
+        return "nettement au-dessus de la normale"
+    if plus_haut >= 90:
+        if not bas:
+            return "nettement en dessous de la normale"
+        avant = passe[passe <= v]
+        if avant.empty:
+            return f"plus bas jamais mesuré (depuis {passe.index[0].year})"
+        if avant.index[-1] < limite:
+            return f"plus bas depuis {libelle_mois(avant.index[-1])}"
+        return "nettement en dessous de la normale"
+    if plus_bas >= 75:
+        return "au-dessus de la normale"
+    if plus_haut >= 75:
+        return "en dessous de la normale"
+    return "dans la normale"
+
+
+def _niveau_composante(c, fin):
+    if c.mensuel is not None:
+        m = c.mensuel.dropna()
+        m = m[m.index + pd.Timedelta(days=26) <= fin]  # mois déjà publiés
+        return niveau(m, fenetre=config.FENETRE_MOIS, recent=pd.DateOffset(months=6),
+                      minimum=config.MIN_HISTORIQUE_MOIS)
+    return niveau(c.brut, fin, bas=c.bas)
 
 
 def _wiki(fin, semaines):
@@ -133,7 +203,7 @@ def _wiki(fin, semaines):
                         if pd.notna(v) else "")
         comps.append(Composante(f"wiki_{pilier}", pilier,
                                 f"Intérêt sur Wikipédia ({len(pages)} pages)", "Wikipédia",
-                                z, aff, int(total.notna().sum())))
+                                z, aff, int(total.notna().sum()), brut=total, bas=False))
         paniers[pilier] = brut
         pages_detail[pilier] = pages
     return comps, pages_detail, (vues, zpage, pd.DataFrame(paniers))
@@ -160,7 +230,8 @@ def _insee(semaines):
                for v, mo in zip(j["valeur"], j["mois"])]
         comps.append(Composante(f"insee_{cle}", spec["pilier"], spec["libelle"], "INSEE",
                                 pd.Series(j["z"].values, index=semaines),
-                                pd.Series(aff, index=semaines), int(s.size)))
+                                pd.Series(aff, index=semaines), int(s.size),
+                                ratio=False, mensuel=s))
     return comps, mensuel
 
 
@@ -180,7 +251,7 @@ def _gdelt(fin, semaines):
                         if pd.notna(v) else "")
             comps.append(Composante(f"gdelt_{cle}", spec["pilier"], spec["libelle"],
                                     "GDELT (presse)", z * spec["sens"], aff,
-                                    int(s.notna().sum())))
+                                    int(s.notna().sum()), brut=s))
     evt = lire("gdelt_evenements.csv")
     types = pd.DataFrame()
     if not evt.empty:
@@ -192,7 +263,7 @@ def _gdelt(fin, semaines):
         aff = s.map(lambda v: f"{v:,.0f} actions".replace(",", " ") if pd.notna(v) else "")
         spec = config.GDELT_EVENEMENTS
         comps.append(Composante("gdelt_evenements", spec["pilier"], spec["libelle"],
-                                "GDELT", z * spec["sens"], aff, int(s.notna().sum())))
+                                "GDELT", z * spec["sens"], aff, int(s.notna().sum()), brut=s))
         types = sem
         if "fr_articles" in sem:
             base = sem["fr_articles"].where(sem["fr_articles"] > 0)
@@ -204,7 +275,7 @@ def _gdelt(fin, semaines):
                            if pd.notna(v) else "")
             spec = config.GDELT_PART
             comps.append(Composante("gdelt_part", spec["pilier"], spec["libelle"], "GDELT",
-                                    z * spec["sens"], aff, int(part.notna().sum())))
+                                    z * spec["sens"], aff, int(part.notna().sum()), brut=part))
             # tonalité moyenne des articles (négatif = actualité plus sombre)
             if "fr_ton" in sem:
                 ton = sem["fr_ton"] / base
@@ -213,7 +284,8 @@ def _gdelt(fin, semaines):
                               if pd.notna(v) else "")
                 spec = config.GDELT_TON
                 comps.append(Composante("gdelt_ton", spec["pilier"], spec["libelle"], "GDELT",
-                                        z * spec["sens"], aff, int(ton.notna().sum())))
+                                        z * spec["sens"], aff, int(ton.notna().sum()),
+                                        brut=ton, ratio=False))
     return comps, types
 
 
@@ -242,8 +314,10 @@ def _carburants(semaines):
             morceaux.append(f"E10 {e[t]:.2f} €".replace(".", ","))
         aff[t] = " · ".join(morceaux)
     n = int((aff != "").sum())
+    prix_moyen = pd.concat([pd.to_numeric(df[c], errors="coerce")
+                            for c in config.CARBURANTS if c in df], axis=1).mean(axis=1)
     return [Composante("carburants", "pouvoir_achat", "Prix à la pompe", "Carburants",
-                       z, aff, n)]
+                       z, aff, n, brut=prix_moyen)]
 
 
 # --------------------------------------------------------------------------
@@ -262,24 +336,43 @@ def _variation(serie: pd.Series, decalage: int):
 
 
 def _montent(fin: pd.Timestamp):
-    top = lire("wiki_top.csv", dtype={"vues": float})
-    if top.empty:
-        return []
-    top["date"] = pd.to_datetime(top["date"])
-    sem = top[(top["date"] > fin - pd.Timedelta(days=7)) & (top["date"] <= fin)]
-    base = top[(top["date"] > fin - pd.Timedelta(days=35)) &
-               (top["date"] <= fin - pd.Timedelta(days=7))]
-    if sem.empty:
-        return []
-    plancher = 7 * (base if not base.empty else sem).groupby("date")["vues"].min().mean()
-    vs = sem.groupby("page")["vues"].sum()
-    vb = (base.groupby("page")["vues"].sum() / 4).reindex(vs.index).fillna(0)
-    ratio = vs / np.maximum(vb, plancher)
-    res = pd.DataFrame({"vues": vs, "ratio": ratio})
-    res = res[[not wikipedia.page_exclue(p) for p in res.index]]
-    res = res[res["vues"] >= 2 * plancher].sort_values("ratio", ascending=False).head(8)
+    res = wikipedia.pages_en_hausse(lire("wiki_top.csv", dtype={"vues": float}), fin).head(8)
     return [{"titre": p.replace("_", " "), "url": f"https://fr.wikipedia.org/wiki/{p}",
              "vues": int(r.vues), "ratio": _f(r.ratio, 1)} for p, r in res.iterrows()]
+
+
+def _sujets(fin: pd.Timestamp):
+    """Sujets émergents détectés cette semaine, situés dans leur histoire."""
+    suj = lire("sujets.csv", dtype=str)
+    if suj.empty:
+        return None  # détection jamais lancée
+    cour = suj[suj["semaine"] == fin.date().isoformat()]
+    histo = lire("wiki_sujets.csv", dtype={"vues": float})
+    recent = (fin - pd.Timedelta(weeks=8)).date().isoformat()
+    sortie = []
+    for _, r in cour.iterrows():
+        page = r["page"]
+        serie = pd.Series(dtype=float)
+        if not histo.empty:
+            h = histo[histo["page"] == page]
+            serie = pd.Series(h["vues"].values, index=pd.to_datetime(h["semaine"])).sort_index()
+        serie = serie.loc[:fin]
+        if serie.notna().sum() > config.MIN_HISTORIQUE:
+            situation = niveau(serie, fin, bas=False)
+        else:
+            situation = "page récente ou peu lue jusqu'ici"
+        deux_ans = serie.tail(104)
+        maxi = deux_ans.max() if not deux_ans.empty else None
+        spark = ([None if pd.isna(v) else float(100 * v / maxi) for v in deux_ans]
+                 if maxi and maxi > 0 else [])
+        sortie.append({
+            "titre": page.replace("_", " "), "url": f"https://fr.wikipedia.org/wiki/{page}",
+            "cle": r["pilier"], "pilier": config.PILIERS.get(r["pilier"], r["pilier"]),
+            "raison": r["raison"], "vues": int(float(r["vues"])), "ratio": _f(float(r["ratio"]), 1),
+            "niveau": situation, "spark": spark,
+            "semaines": int(suj[(suj["page"] == page) & (suj["semaine"] >= recent)]["semaine"].nunique()),
+        })
+    return sorted(sortie, key=lambda x: -(x["ratio"] or 0))
 
 
 def _carte(fin: pd.Timestamp):
@@ -363,6 +456,8 @@ def calculer() -> dict:
                 "z": _f(zf), "historique": c.historique,
                 "court": c.historique < 52,
                 "actif": zf is not None and not pd.isna(zf),
+                "niveau": _niveau_composante(c, fin),
+                "vs": vs_normale(c.brut, fin) if c.ratio else None,
             })
         details.sort(key=lambda d: -(d["z"] if d["z"] is not None else -99))
         sc = scores[cle].get(fin)
@@ -390,7 +485,9 @@ def calculer() -> dict:
         if z is not None and pd.notna(z) and abs(z) >= config.SEUIL_VOYANT:
             voyants.append({"libelle": c.libelle, "pilier": config.PILIERS[c.pilier],
                             "z": _f(z), "valeur": c.affichage.get(fin, ""),
-                            "sens": "hausse" if z > 0 else "baisse"})
+                            "sens": "hausse" if z > 0 else "baisse",
+                            "niveau": _niveau_composante(c, fin),
+                            "vs": vs_normale(c.brut, fin) if c.ratio else None})
     pages_suivies = []
     if isinstance(wiki_brut, tuple):
         vues, zpage, _ = wiki_brut
@@ -404,13 +501,16 @@ def calculer() -> dict:
                          "vues": None if pd.isna(v) else int(v),
                          "evol": None if pd.isna(v) or pd.isna(avant) or avant == 0
                          else _f(100 * (v / avant - 1), 0),
-                         "z": _f(z)}
+                         "z": _f(z),
+                         "vs": vs_normale(vues[p], fin),
+                         "niveau": niveau(vues[p], fin, bas=False)}
                 pages_suivies.append(ligne)
                 if z is not None and pd.notna(z) and z >= config.SEUIL_VOYANT + 0.5:
                     voyants.append({"libelle": f"Wikipédia « {p} »",
                                     "pilier": config.PILIERS[pilier], "z": _f(z),
                                     "valeur": f"{int(v):,} vues".replace(",", " ")
-                                    if pd.notna(v) else "", "sens": "hausse"})
+                                    if pd.notna(v) else "", "sens": "hausse",
+                                    "niveau": ligne["niveau"], "vs": ligne["vs"]})
     voyants.sort(key=lambda v: -abs(v["z"]))
     for cle, p in piliers.items():
         if p.get("delta1") is not None and p["delta1"] >= 15:
@@ -441,6 +541,7 @@ def calculer() -> dict:
         "piliers": list(piliers.values()),
         "voyants": voyants[:12],
         "montent": _montent(fin),
+        "sujets": _sujets(fin),
         "pages_suivies": pages_suivies,
         "carte": _carte(fin),
         "types": _types(types, fin),

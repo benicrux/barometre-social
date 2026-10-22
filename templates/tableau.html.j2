@@ -95,7 +95,12 @@ details[open] summary::before{content:"▾ "}
 .compo{list-style:none;margin:8px 0 0;padding:0;font-size:13px}
 .compo li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:6px 0;border-top:1px solid var(--grille)}
 .compo .src{color:var(--encre-3);font-size:12px}
-.compo .z{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.compo .z{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;white-space:nowrap}
+.compo .niv{grid-column:1 / -1;font-size:12px;color:var(--encre-2);font-style:italic}
+.niv-txt{font-weight:600;color:var(--encre-1)}
+.sujets li{grid-template-columns:minmax(0,1fr) auto}
+.tag-jauge{grid-column:1 / -1;justify-self:start;margin:0 0 2px}
+.sujets .num .spark{margin-top:4px}
 .tag{display:inline-block;font-size:11px;color:var(--encre-3);border:1px solid var(--grille);border-radius:6px;padding:0 5px;margin-left:4px}
 
 /* Listes et tableaux */
@@ -205,7 +210,7 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
     <div>{{ p.delta1|delta(" vs sem. préc.") }}</div>
     {{ p.sparkline|sparkline(180, 34) }}
     <div class="moteurs">
-      {% if p.moteurs %}Ce qui tire : {% for m in p.moteurs %}<b>{{ m.libelle }}</b> ({{ m.z|sigma }}){% if not loop.last %}, {% endif %}{% endfor %}
+      {% if p.moteurs %}Ce qui tire : {% for m in p.moteurs %}<b>{{ m.libelle }}</b> ({{ m.niveau or 'au-dessus de la normale' }}){% if not loop.last %}, {% endif %}{% endfor %}
       {% elif p.score is none %}Pas encore de données.
       {% else %}Rien d'anormal cette semaine.{% endif %}
     </div>
@@ -217,7 +222,8 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
         <li>
           <span>{{ c.libelle }}{% if not c.actif %}<span class="tag">en construction · {{ c.historique }} sem.</span>{% elif c.court %}<span class="tag">historique court</span>{% endif %}
             <br><span class="src">{{ c.source }}{% if c.valeur %} · {{ c.valeur }}{% endif %}</span></span>
-          <span class="z">{{ c.z|sigma }}</span>
+          <span class="z">{{ c.vs|pct }}</span>
+          {% if c.niveau %}<span class="niv">{{ c.niveau|capitalize }}</span>{% endif %}
         </li>
       {% endfor %}
       </ul>
@@ -231,14 +237,14 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
   <!-- Voyants -->
   <section class="carte-ui" aria-labelledby="t-voy">
     <h2 id="t-voy">Les voyants de la semaine</h2>
-    <p class="aide">Ce qui s'écarte nettement de la normale (au moins 2 écarts-types), et les jauges qui bondissent.</p>
+    <p class="aide">Ce qui sort nettement de l'ordinaire cette semaine, et les jauges qui bondissent. « vs normale » compare à une semaine habituelle des deux dernières années.</p>
     {% if ind.voyants %}
     <ul class="liste">
       {% for v in ind.voyants %}
       <li>
         <span class="{{ 'fleche-h' if v.sens == 'hausse' else 'fleche-b' }}" aria-hidden="true">{{ '▲' if v.sens == 'hausse' else '▼' }}</span>
-        <span>{{ v.libelle }}<br><span class="sec">{{ v.pilier }}{% if v.valeur %} · {{ v.valeur }}{% endif %} · {{ 'tension en hausse' if v.sens == 'hausse' else 'détente' }}</span></span>
-        <span class="num">{{ v.z|sigma if v.z is not none else '' }}</span>
+        <span>{{ v.libelle }}<br><span class="sec">{{ v.pilier }}{% if v.valeur %} · {{ v.valeur }}{% endif %}{% if v.niveau %} · <b class="niv-txt">{{ v.niveau }}</b>{% endif %}</span></span>
+        <span class="num">{{ (v.vs|pct ~ ' vs normale') if v.vs is not none else '' }}</span>
       </li>
       {% endfor %}
     </ul>
@@ -272,8 +278,49 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
 </div>
 
 <div class="grille-2">
+  <!-- Sujets émergents -->
+  <section class="carte-ui" aria-labelledby="t-suj">
+    <h2 id="t-suj">Sujets émergents</h2>
+    <p class="aide">Repérés automatiquement : pages Wikipédia qui décollent cette semaine et qui touchent au social, à l'économie ou à la politique en France, d'après leurs catégories. Des alertes à regarder ; elles ne comptent pas dans les scores.</p>
+    {% if ind.sujets %}
+    <ul class="liste sujets">
+      {% for m in ind.sujets %}
+      <li>
+        <span class="tag tag-jauge">{{ m.pilier }}</span>
+        <span><a href="{{ m.url }}" rel="noopener">{{ m.titre }}</a>
+          <br><span class="sec">{{ m.vues|fr }} vues · <b class="niv-txt">{{ m.niveau }}</b></span>
+          <br><span class="sec">Catégorie « {{ m.raison }} »{% if m.semaines > 1 %} · repéré {{ m.semaines }} semaines sur les 8 dernières{% endif %}</span></span>
+        <span class="num">×{{ m.ratio|fr(1) }}<br>{{ m.spark|sparkline(90, 26, none, "Lecture de la page sur deux ans") }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% elif ind.sujets is none %}<p class="vide">La détection démarre au prochain calcul.</p>
+    {% else %}<p class="vide">Aucun sujet social, économique ou politique n'a décollé cette semaine.</p>{% endif %}
+  </section>
+
+  <!-- Ce qui monte -->
+  <section class="carte-ui" aria-labelledby="t-monte">
+    <h2 id="t-monte">Ce qui monte sur Wikipédia</h2>
+    <p class="aide">Les pages dont la lecture a le plus progressé cette semaine par rapport aux quatre précédentes, tous sujets confondus (sport, culture, faits divers…).</p>
+    {% if ind.montent %}
+    <ol class="liste">
+      {% for m in ind.montent %}
+      <li><span class="sec">{{ loop.index }}</span><span><a href="{{ m.url }}" rel="noopener">{{ m.titre }}</a><br><span class="sec">{{ m.vues|fr }} vues</span></span><span class="num">×{{ m.ratio|fr(1) }}</span></li>
+      {% endfor %}
+    </ol>
+    {% else %}<p class="vide">Classement pas encore disponible.</p>{% endif %}
+    {% if ind.pages_suivies %}
+    <details style="margin-top:10px"><summary>Les {{ ind.pages_suivies|length }} pages suivies par le baromètre</summary>
+      <div class="defile"><table><thead><tr><th>Page</th><th>Jauge</th><th class="n">Vues</th><th class="n">vs normale</th><th>Niveau</th></tr></thead><tbody>
+      {% for p in ind.pages_suivies|sort(attribute='z', reverse=true) if p.z is not none %}<tr><td><a href="{{ p.url }}" rel="noopener">{{ p.page }}</a></td><td>{{ p.pilier }}</td><td class="n">{{ p.vues|fr }}</td><td class="n">{{ p.vs|pct }}</td><td>{{ p.niveau or '–' }}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </details>
+    {% endif %}
+  </section>
+</div>
+
   <!-- Carte -->
-  <section class="carte-ui" aria-labelledby="t-carte">
+<section class="carte-ui" aria-labelledby="t-carte" style="margin-top:16px">
     <h2 id="t-carte">Carte des tensions</h2>
     <p class="aide">Actions de contestation relevées dans la presse cette semaine (source GDELT, codage automatique : ordres de grandeur, pas un décompte officiel).</p>
     {% if ind.carte %}
@@ -293,26 +340,6 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
     {% endif %}
   </section>
 
-  <!-- Ce qui monte -->
-  <section class="carte-ui" aria-labelledby="t-monte">
-    <h2 id="t-monte">Ce qui monte sur Wikipédia</h2>
-    <p class="aide">Les pages dont la lecture a le plus progressé cette semaine par rapport aux quatre précédentes : ce qui occupe les esprits, tous sujets confondus.</p>
-    {% if ind.montent %}
-    <ol class="liste">
-      {% for m in ind.montent %}
-      <li><span class="sec">{{ loop.index }}</span><span><a href="{{ m.url }}" rel="noopener">{{ m.titre }}</a><br><span class="sec">{{ m.vues|fr }} vues</span></span><span class="num">×{{ m.ratio|fr(1) }}</span></li>
-      {% endfor %}
-    </ol>
-    {% else %}<p class="vide">Classement pas encore disponible.</p>{% endif %}
-    {% if ind.pages_suivies %}
-    <details style="margin-top:10px"><summary>Les {{ ind.pages_suivies|length }} pages suivies par le baromètre</summary>
-      <div class="defile"><table><thead><tr><th>Page</th><th>Jauge</th><th class="n">Vues</th><th class="n">vs 4 sem.</th><th class="n">Écart</th></tr></thead><tbody>
-      {% for p in ind.pages_suivies|sort(attribute='z', reverse=true) if p.z is not none %}<tr><td><a href="{{ p.url }}" rel="noopener">{{ p.page }}</a></td><td>{{ p.pilier }}</td><td class="n">{{ p.vues|fr }}</td><td class="n">{{ (p.evol|fr(0, true) ~ ' %') if p.evol is not none else '–' }}</td><td class="n">{{ p.z|sigma }}</td></tr>{% endfor %}
-      </tbody></table></div>
-    </details>
-    {% endif %}
-  </section>
-</div>
 
 <!-- Historique -->
 <section class="carte-ui" aria-labelledby="t-hist">
@@ -363,7 +390,8 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
       {% for s in statuts %}<li><span class="{{ 'ok' if s.ok else 'ko' }}">{{ '✓' if s.ok else '✗' }}</span><span>{{ s.source }}<br><span class="sec">{{ s.message }}</span></span><span></span></li>{% endfor %}
     </ul>
     <details style="margin-top:10px"><summary>Comment c'est calculé</summary>
-      <p>Chaque indicateur est comparé à ses deux années précédentes : on mesure de combien d'écarts-types (σ) la semaine s'écarte de la normale, en orientant le signe pour que « + » veuille toujours dire « plus de tension » (par exemple, une baisse de la confiance des ménages compte en +).</p>
+      <p>Chaque indicateur est comparé à ses deux années précédentes. « vs normale » donne l'écart avec une semaine habituelle (la médiane des deux ans) ; le niveau situe la semaine en mots, par exemple « plus haut depuis mars 2023 » quand il faut remonter loin pour trouver plus élevé.</p>
+      <p>Pour les scores, le calcul mesure cet écart en tenant compte de la variabilité habituelle de chaque indicateur, et l'oriente pour que « plus » veuille toujours dire « plus de tension » : une baisse de la confiance des ménages fait monter la jauge.</p>
       <p>Une jauge est la moyenne de ses indicateurs ; la météo sociale est la moyenne des cinq jauges. Les scores 0-100 traduisent ces écarts : 50 = normal, 73 ≈ +1σ, 88 ≈ +2σ, 95 ≈ +3σ.</p>
       <p>Sources gratuites : pages vues Wikipédia (Wikimedia), enquête de conjoncture auprès des ménages (INSEE), presse et événements géolocalisés (GDELT), prix des carburants (data.economie.gouv.fr). Un indicateur hebdomadaire ne compte qu'après {{ min_hist }} semaines d'historique ; avant, il est affiché « en construction ».</p>
     </details>

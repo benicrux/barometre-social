@@ -30,11 +30,18 @@ def fr(x, nd=0, signe=False):
     return s.replace(",", " ").replace(".", ",").replace("-", "−")
 
 
+def pct(v):
+    """Écart en % lisible : « +195 % », « −10 % », « – » si inconnu."""
+    if v is None or isinstance(v, Undefined):
+        return "–"
+    return f"{fr(v, 0, signe=True)}\u00a0%"
+
+
 def sigma(z):
     return "–" if z is None else f"{fr(z, 1, signe=True)} σ"
 
 
-def sparkline(valeurs, largeur=120, hauteur=32, ref=50):
+def sparkline(valeurs, largeur=120, hauteur=32, ref=50, titre=None):
     pts = [(i, v) for i, v in enumerate(valeurs or [])]
     if not any(v is not None for _, v in pts):
         return Markup("")
@@ -53,10 +60,11 @@ def sparkline(valeurs, largeur=120, hauteur=32, ref=50):
         chemins.append(seg)
     d = " ".join("M" + " L".join(s) for s in chemins)
     der = next(((i, v) for i, v in reversed(pts) if v is not None))
-    texte = f"Évolution sur {len(pts)} semaines, dernière valeur {fr(der[1])}"
+    texte = titre or f"Évolution sur {len(pts)} semaines, dernière valeur {fr(der[1])}"
     svg = (f'<svg class="spark" viewBox="0 0 {largeur} {hauteur}" width="{largeur}" '
            f'height="{hauteur}" role="img" aria-label="{texte}">'
-           f'<line x1="0" x2="{largeur}" y1="{Y(ref):.1f}" y2="{Y(ref):.1f}" class="spark-ref"/>'
+           + (f'<line x1="0" x2="{largeur}" y1="{Y(ref):.1f}" y2="{Y(ref):.1f}" class="spark-ref"/>'
+              if ref is not None else "") +
            f'<path d="{d}" class="spark-ligne"/>'
            f'<circle cx="{X(der[0]):.1f}" cy="{Y(der[1]):.1f}" r="3.5" class="spark-point"/>'
            f"<title>{texte}</title></svg>")
@@ -109,7 +117,7 @@ def delta(v, suffixe=""):
 def generer(ind: dict, prev: dict, statuts: list[dict]) -> Path:
     env = Environment(loader=FileSystemLoader(RACINE / "templates"),
                       autoescape=select_autoescape(["html", "j2"]))
-    env.filters.update(fr=fr, sigma=sigma, sparkline=sparkline, puce=puce,
+    env.filters.update(fr=fr, sigma=sigma, pct=pct, sparkline=sparkline, puce=puce,
                        delta=delta, cellule=couleur_cellule)
     maintenant = datetime.now(ZoneInfo("Europe/Paris"))
     calcule = (f"{maintenant.day} {MOIS[maintenant.month - 1]} {maintenant.year} "

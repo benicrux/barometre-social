@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import unicodedata
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -98,3 +99,14 @@ def lire_json(nom: str, defaut=None):
     if not chemin.exists():
         return defaut
     return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def sans_accents(texte: str) -> str:
+    t = unicodedata.normalize("NFKD", texte or "")
+    return "".join(c for c in t if not unicodedata.combining(c)).lower()
+
+
+def derniere_semaine_finie() -> date:
+    """Dernier dimanche passé (fin de la dernière semaine complète)."""
+    h = hier()
+    return h - timedelta(days=(h.weekday() + 1) % 7)

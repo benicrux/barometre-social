@@ -63,6 +63,36 @@ WIKI_PAGES = {
 WIKI_DEBUT = "2015-07-01"
 
 # ---------------------------------------------------------------------------
+# Sujets émergents : détection automatique, chaque semaine, des pages
+# Wikipédia en forte hausse qui touchent au social, à l'économie ou à la
+# politique en France. Le tri se fait sur les catégories Wikipédia de la page
+# (mots écrits sans accents). Ces sujets sont affichés comme alertes ; ils
+# n'entrent pas dans le calcul des scores.
+# ---------------------------------------------------------------------------
+SUJETS_RATIO_MIN = 1.8   # lecture au moins 1,8 fois plus forte que les 4 semaines d'avant
+SUJETS_MAX = 8           # nombre de sujets affichés
+SUJETS_MOTS = {
+    "mobilisation": ["greve", "manifestation", "mouvement social", "syndicat", "syndical",
+                     "contestation", "emeute", "desobeissance", "blocage", "conflit social",
+                     "revolte", "protestation", "militantisme", "mouvement de protestation"],
+    "emploi": ["emploi", "chomage", "licenciement", "droit du travail", "plan social",
+               "relations de travail", "travail en france", "retraite", "fermeture d'usine"],
+    "pouvoir_achat": ["prix", "inflation", "impot", "fiscalite", "taxe", "pauvrete",
+                      "aide sociale", "prestation sociale", "salaire", "logement",
+                      "cout de la vie", "carburant", "energie en france", "consommation"],
+    "institutions": ["gouvernement", "assemblee nationale", "senat", "election", "parlement",
+                     "constitution", "ministre", "personnalite politique", "parti politique",
+                     "loi francaise", "projet de loi", "budget de l'etat", "finances publiques",
+                     "politique en france", "president de la republique", "referendum",
+                     "procedure parlementaire"],
+}
+SUJETS_EXCLUS = ["sport", "football", "rugby", "tennis", "cyclisme", "olympique", "film",
+                 "serie televisee", "emission de television", "chanson", "album", "acteur",
+                 "actrice", "chanteur", "chanteuse", "jeu video", "personnage de fiction",
+                 "manga", "roman ", "telerealite", "championnat", "club de", "festival",
+                 "affaire criminelle", "meurtre"]
+
+# ---------------------------------------------------------------------------
 # INSEE : enquête mensuelle de conjoncture auprès des ménages.
 # Les séries sont repérées par des mots de leur titre officiel (sans accents),
 # ce qui évite de dépendre d'identifiants qui peuvent changer.

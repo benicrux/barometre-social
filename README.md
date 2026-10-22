@@ -2,7 +2,7 @@
 
 Un tableau de bord hebdomadaire du climat social en France, façon « cockpit présidentiel », calculé automatiquement chaque lundi à partir de données publiques et gratuites, et publié sur une page web consultable depuis un téléphone.
 
-**Ce qu'il affiche :** une météo sociale sur 100, cinq jauges (pouvoir d'achat, emploi, moral des ménages, mobilisation, tension institutionnelle), les voyants rouges de la semaine, une prévision du prochain chiffre INSEE de confiance des ménages comparée au réalisé, une carte des actions de contestation, ce qui monte sur Wikipédia, l'historique sur deux ans avec vos repères, et une vue mois par mois.
+**Ce qu'il affiche :** une météo sociale sur 100, cinq jauges (pouvoir d'achat, emploi, moral des ménages, mobilisation, tension institutionnelle), les voyants rouges de la semaine, les sujets émergents repérés automatiquement, une prévision du prochain chiffre INSEE de confiance des ménages comparée au réalisé, une carte des actions de contestation, ce qui monte sur Wikipédia, l'historique sur deux ans avec vos repères, et une vue mois par mois.
 
 **Coût : 0 €.** GitHub Actions et GitHub Pages sont gratuits pour un dépôt public.
 
@@ -40,7 +40,8 @@ Ensuite, tout est automatique : le calcul tourne **chaque lundi matin**.
 ## Au quotidien
 
 - **Ajouter une décision ou un événement** sur les courbes : ouvrez `decisions.csv` sur GitHub, cliquez le crayon ✏️, ajoutez une ligne `2026-11-03,Annonce du gel des prix de l'énergie,Décision`, puis **Commit changes**. Elle apparaîtra au prochain calcul.
-- **Changer les mots-clés suivis** : tout est dans `config.py` (liste des pages Wikipédia par jauge, séries INSEE, requêtes presse, seuils).
+- **Changer les mots-clés suivis** : tout est dans `config.py` (liste des pages Wikipédia par jauge, séries INSEE, seuils).
+- **Sujets émergents** : chaque semaine, les pages Wikipédia qui décollent sont triées d'après leurs catégories (règles `SUJETS_MOTS` et `SUJETS_EXCLUS` dans `config.py`). Ils s'affichent comme alertes et ne comptent pas dans les scores ; si l'un d'eux mérite d'être suivi durablement, ajoute son titre à `WIKI_PAGES`.
 - **Relancer sans attendre lundi** : onglet Actions → Run workflow.
 - **Si une source tombe en panne** : la page s'affiche quand même, et la section *Santé des sources* indique ce qui a échoué. Les données manquantes sont récupérées au lancement suivant quand c'est possible.
 
