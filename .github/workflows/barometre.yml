@@ -1,0 +1,63 @@
+name: Baromètre social
+
+on:
+  schedule:
+    # Chaque lundi à 6 h 17 UTC (7 h 17 à Paris en hiver, 8 h 17 en été)
+    - cron: "17 6 * * 1"
+  workflow_dispatch: # bouton « Run workflow » pour lancer à la main
+
+permissions:
+  contents: write   # pour sauvegarder les données dans le dépôt
+  pages: write      # pour publier la page
+  id-token: write
+
+concurrency:
+  group: barometre
+  cancel-in-progress: false
+
+jobs:
+  calculer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # le premier lancement récupère l'historique (20 à 40 min)
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Collecter les données et calculer le tableau de bord
+        run: python main.py
+
+      - name: Sauvegarder les données de la semaine
+        run: |
+          git config user.name "barometre-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "Aucune donnée nouvelle."
+          else
+            git commit -m "Données de la semaine $(date +%G-S%V)"
+            git pull --rebase --autostash
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  publier:
+    needs: calculer
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4
