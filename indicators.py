@@ -66,6 +66,12 @@ def derniere_semaine() -> pd.Timestamp:
     return hier - pd.Timedelta(days=(hier.weekday() + 1) % 7)
 
 
+# Semaine en cours : quand ce nombre vaut k (0 = lundi … 5 = samedi), chaque semaine
+# n'est calculée que sur ses jours du lundi au jour k. La semaine en cours, encore
+# incomplète, est ainsi comparée aux mêmes jours des semaines précédentes.
+JOURS_SEMAINE: int | None = None
+
+
 def hebdo(journalier: pd.DataFrame, fin: pd.Timestamp, minimum_jours=4,
           somme=True) -> pd.DataFrame:
     """Journalier -> hebdomadaire (lundi-dimanche) ; jours manquants tolérés."""
@@ -73,6 +79,9 @@ def hebdo(journalier: pd.DataFrame, fin: pd.Timestamp, minimum_jours=4,
         return journalier
     jours = pd.date_range(journalier.index.min(), fin, freq="D")
     j = journalier.reindex(jours)
+    if JOURS_SEMAINE is not None:
+        j = j[j.index.weekday <= JOURS_SEMAINE]
+        minimum_jours = min(minimum_jours, JOURS_SEMAINE + 1)
     moy = j.resample("W-SUN").mean()
     nb = j.resample("W-SUN").count()
     sortie = (moy * 7) if somme else moy
@@ -524,8 +533,8 @@ def _decisions(debut, fin):
              "texte": l["texte"], "type": l["type"], "auto": l["auto"]} for l in garde]
 
 
-def calculer() -> dict:
-    fin = derniere_semaine()
+def calculer(fin: pd.Timestamp | None = None) -> dict:
+    fin = fin if fin is not None else derniere_semaine()
     semaines = pd.date_range(pd.Timestamp(config.WIKI_DEBUT), fin, freq="W-SUN")
 
     comps, pages_par_pilier, wiki_brut = _wiki(fin, semaines)
@@ -691,3 +700,39 @@ def calculer() -> dict:
         "_fin": fin,
     }
 
+
+def calculer_semaine_en_cours() -> dict | None:
+    """Météo provisoire de la semaine en cours (du lundi à hier), comparée aux mêmes
+    jours des semaines précédentes. Rien avant mercredi (il faut deux jours complets),
+    ni le lundi (la semaine écoulée est alors complète)."""
+    global JOURS_SEMAINE
+    hier = pd.Timestamp(aujourdhui()) - pd.Timedelta(days=1)
+    # dernier jour réellement disponible dans les sources quotidiennes (Wikipédia et
+    # GDELT publient la veille avec quelques heures de retard)
+    derniers = []
+    for nom in ("wikipedia.csv", "gdelt_evenements.csv"):
+        d = lire(nom, dtype=str)
+        if not d.empty:
+            derniers.append(pd.Timestamp(d["date"].max()))
+    if not derniers:
+        return None
+    hier = min([hier] + derniers)
+    k = hier.weekday()
+    lundi_courant = pd.Timestamp(aujourdhui()) - pd.Timedelta(days=pd.Timestamp(aujourdhui()).weekday())
+    if hier < lundi_courant or k < 1 or k == 6:
+        return None
+    JOURS_SEMAINE = k
+    try:
+        ind = calculer(fin=fin_de_semaine(hier))
+    finally:
+        JOURS_SEMAINE = None
+    lundi = hier - pd.Timedelta(days=k)
+    jours = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"]
+    return {
+        "periode": f"du lundi {lundi.day} au {jours[k]} {hier.day} {MOIS[hier.month - 1]}",
+        "nb_jours": k + 1,
+        "meteo": ind["meteo"],
+        "piliers": [{"nom": p["nom"], "score": p["score"], "statut": p["statut"]}
+                    for p in ind["piliers"]],
+        "tensions": ind["tensions"][:3],
+    }

@@ -62,6 +62,11 @@ def main(argv: list[str]) -> int:
     except Exception:
         traceback.print_exc()
         etat = None
+    try:  # semaine en cours, provisoire (seulement en milieu de semaine)
+        ind["en_cours"] = indicators.calculer_semaine_en_cours()
+    except Exception:
+        traceback.print_exc()
+        ind["en_cours"] = None
     chemin = render.generer(ind, prev, statuts, etat)
     print(f"Page générée : {chemin}")
     print(f"Météo sociale : {ind['meteo']['score']} ({ind['meteo']['statut'][0]})")

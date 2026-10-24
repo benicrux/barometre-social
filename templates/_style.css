@@ -212,3 +212,16 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
 .bouton-maj{display:inline-block;margin-top:8px;padding:5px 12px;border:1px solid var(--axe);border-radius:999px;font-size:13px;font-weight:600;color:var(--encre-1);text-decoration:none;background:var(--surface)}
 .bouton-maj:hover{border-color:var(--encre-1)}
 @media (max-width:600px){ .meta{text-align:left} }
+/* Semaine en cours (provisoire) */
+.en-cours{border-style:dashed;border-color:var(--axe)}
+.ec-tete{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px 20px}
+.ec-meteo{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.ec-n{font-size:34px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.ec-meteo .sur{color:var(--encre-3);margin-right:4px}
+.ec-jauges{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px}
+.ec-jauges li{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--grille);border-radius:10px}
+.ec-nom{flex:1;font-size:13px;color:var(--encre-2)}
+.ec-score{font-weight:650;font-variant-numeric:tabular-nums}
+.ec-jauges .puce span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ec-jauges .puce{padding:3px}
+.ec-note{font-size:13px;color:var(--encre-2);margin:12px 0 0}

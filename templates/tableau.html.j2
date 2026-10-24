@@ -45,6 +45,28 @@
   </div>
 </section>
 
+{% set ec = ind.en_cours %}
+{% if ec and ec.meteo.score is not none %}
+<!-- Semaine en cours, provisoire -->
+<section class="carte-ui en-cours" aria-labelledby="t-encours">
+  <div class="ec-tete">
+    <div>
+      <div class="surtitre">En direct · provisoire</div>
+      <h2 id="t-encours">Semaine en cours, {{ ec.periode }}</h2>
+    </div>
+    <div class="ec-meteo">
+      <span class="ec-n">{{ ec.meteo.score|fr }}</span><span class="sur">/ 100</span>
+      {{ ec.meteo.statut|puce }} {{ ec.meteo.delta1|delta(" vs mêmes jours sem. préc.") }}
+    </div>
+  </div>
+  <ul class="ec-jauges">
+    {% for p in ec.piliers %}<li><span class="ec-nom">{{ p.nom }}</span><span class="ec-score">{{ p.score|fr }}</span>{{ p.statut|puce }}</li>{% endfor %}
+  </ul>
+  {% if ec.tensions %}<p class="ec-note"><b>Ce qui se tend depuis lundi :</b> {% for v in ec.tensions %}{{ v.libelle }}{% if v.vs is defined and v.vs is not none %} ({{ v.vs|pct }} vs normale){% endif %}{{ ", " if not loop.last }}{% endfor %}.</p>{% endif %}
+  <p class="aide" style="margin:6px 0 0">Calculé sur {{ ec.nb_jours }} jours et comparé aux mêmes jours des semaines précédentes. L'enquête INSEE et les prix sont repris tels quels. Chiffre définitif lundi ; le reste de la page porte sur la dernière semaine complète.</p>
+</section>
+{% endif %}
+
 <!-- Les cinq jauges -->
 <div class="jauges">
 {% for p in ind.piliers %}
