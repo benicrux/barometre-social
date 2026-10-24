@@ -209,3 +209,6 @@ footer{margin-top:28px;color:var(--encre-3);font-size:12px}
 .indic li.sous-ind .nom b{font-weight:500}
 .indic li.sous-ind .val{font-size:15px}
 .spk-axe{display:flex;justify-content:space-between;width:104px;font-size:10.5px;line-height:1;color:var(--encre-3);font-variant-numeric:tabular-nums;margin-top:2px}
+.bouton-maj{display:inline-block;margin-top:8px;padding:5px 12px;border:1px solid var(--axe);border-radius:999px;font-size:13px;font-weight:600;color:var(--encre-1);text-decoration:none;background:var(--surface)}
+.bouton-maj:hover{border-color:var(--encre-1)}
+@media (max-width:600px){ .meta{text-align:left} }

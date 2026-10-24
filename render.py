@@ -150,7 +150,8 @@ def generer(ind: dict, prev: dict, statuts: list[dict], pays: dict | None = None
     chemin = SORTIE / "index.html"
     chemin.write_text(html, encoding="utf-8")
     # Volet 2 : État du pays
-    page_pays = env.get_template("pays.html.j2").render(pays=pays, calcule=calcule)
+    page_pays = env.get_template("pays.html.j2").render(
+        pays=pays, calcule=calcule, depot=os.environ.get("GITHUB_REPOSITORY", ""))
     (SORTIE / "pays.html").write_text(page_pays, encoding="utf-8")
     (SORTIE / ".nojekyll").write_text("", encoding="utf-8")
     return chemin

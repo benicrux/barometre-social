@@ -24,7 +24,7 @@
     <h1>Tableau de bord de la semaine</h1>
     <p class="sous">Semaine {{ ind.semaine }}</p>
   </div>
-  <div class="meta">Calculé le {{ calcule }}<br>Mise à jour automatique chaque lundi</div>
+  <div class="meta">Calculé le {{ calcule }}<br>Mise à jour automatique chaque lundi{% include "_actualiser.html.j2" %}</div>
 </header>
 
 <!-- Météo sociale -->

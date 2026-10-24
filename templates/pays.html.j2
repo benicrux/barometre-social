@@ -21,7 +21,7 @@
     <h1>État du pays</h1>
     <p class="sous">Les derniers chiffres officiels, comparés à l'an dernier</p>
   </div>
-  <div class="meta">Calculé le {{ calcule }}<br>Nouveaux chiffres repris chaque lundi</div>
+  <div class="meta">Calculé le {{ calcule }}<br>Nouveaux chiffres repris chaque lundi{% include "_actualiser.html.j2" %}</div>
 </header>
 
 {% if not pays %}
