@@ -1,7 +1,4 @@
 date,lieu,lat,lon,n
-2026-08-15,"Evian-Les-Bains, RhôAlpes, France",46.3833,6.58333,1
-2026-08-15,"Paris, France (general), France",48.8667,2.33333,3
-2026-08-16,"Biscarrosse, Aquitaine, France",44.3944,-1.1641,1
 2026-08-17,"Pommery, Champagne-Ardenne, France",49.4149,4.37571,1
 2026-08-18,"Paris, France (general), France",48.8667,2.33333,4
 2026-08-18,"Saint-Nizier, Bourgogne, France",46.7473,4.35345,2
@@ -266,3 +263,35 @@ date,lieu,lat,lon,n
 2026-10-23,"Sarcelles, France (general), France",48.9936,2.41077,1
 2026-10-23,"Trappes, France (general), France",48.7741,2.01781,10
 2026-10-23,"Verriere, Auvergne, France",45.8944,2.94214,2
+2026-10-24,"Bourse, Îe-de-France, France",48.8333,2.28333,2
+2026-10-24,"Canal Saint-Martin, France (general), France",48.8472,2.36659,2
+2026-10-24,"Chambery, RhôAlpes, France",45.5929,5.91132,2
+2026-10-24,"Clermont-Ferrand, Auvergne, France",45.7797,3.08628,5
+2026-10-24,"Creteil, France (general), France",48.7927,2.46569,2
+2026-10-24,"Denain, Nord-Pas-de-Calais, France",50.3293,3.3943,2
+2026-10-24,"Isere, RhôAlpes, France",44.9837,4.86045,1
+2026-10-24,"La Bastille, RhôAlpes, France",45.1998,5.72534,5
+2026-10-24,"La Bourse, Auvergne, France",46.2206,3.11541,2
+2026-10-24,"Le Havre, Haute-Normandie, France",49.5,0.133333,3
+2026-10-24,"Les Halles, RhôAlpes, France",45.7182,4.43237,1
+2026-10-24,"Loiret, Centre, France",47.8632,1.80278,2
+2026-10-24,"Mulhouse, Alsace, France",47.7381,7.34793,3
+2026-10-24,"Orsay, France (general), France",48.6957,2.18727,4
+2026-10-24,"Palais, RhôAlpes, France",45.3633,4.49802,4
+2026-10-24,"Paris, France (general), France",48.8667,2.33333,83
+2026-10-24,"Rouen, Haute-Normandie, France",49.4333,1.08333,4
+2026-10-24,"Saint-Etienne, RhôAlpes, France",44.7011,4.45858,2
+2026-10-24,"Trappes, France (general), France",48.7741,2.01781,9
+2026-10-24,"Verriere, Auvergne, France",45.8944,2.94214,1
+2026-10-25,"Cherbourg, Basse-Normandie, France",49.64,-1.6155,1
+2026-10-25,"Clermont-Ferrand, Auvergne, France",45.7797,3.08628,5
+2026-10-25,"French Riviera, France (general), France",43.5599,7.13672,1
+2026-10-25,"Grenelle, France (general), France",48.8484,2.29164,1
+2026-10-25,"Le Havre, Haute-Normandie, France",49.5,0.133333,1
+2026-10-25,"Loiret, Centre, France",47.8632,1.80278,4
+2026-10-25,"Orsay, France (general), France",48.6957,2.18727,3
+2026-10-25,"Paris, France (general), France",48.8667,2.33333,78
+2026-10-25,"Poitiers, Poitou-Charentes, France",46.5833,0.333333,1
+2026-10-25,"Rennes, Bretagne, France",48.112,-1.67429,4
+2026-10-25,"Rouen, Haute-Normandie, France",49.4333,1.08333,3
+2026-10-25,"Trappes, France (general), France",48.7741,2.01781,1
