@@ -1,10 +1,4 @@
 date,lieu,lat,lon,n
-2026-08-17,"Pommery, Champagne-Ardenne, France",49.4149,4.37571,1
-2026-08-18,"Paris, France (general), France",48.8667,2.33333,4
-2026-08-18,"Saint-Nizier, Bourgogne, France",46.7473,4.35345,2
-2026-08-19,"Aix-Les-Bains, RhôAlpes, France",45.6834,5.92241,2
-2026-08-19,"Paris, France (general), France",48.8667,2.33333,3
-2026-08-20,"Paris, France (general), France",48.8667,2.33333,1
 2026-08-21,"Gironde, Aquitaine, France",44.584,-0.089244,1
 2026-08-22,"Aix-En-Provence, Provence-Alpes-Côd'Azur, France",43.5287,5.44879,1
 2026-08-22,"Jeux, Bourgogne, France",47.5329,4.25119,2
@@ -295,3 +289,25 @@ date,lieu,lat,lon,n
 2026-10-25,"Rennes, Bretagne, France",48.112,-1.67429,4
 2026-10-25,"Rouen, Haute-Normandie, France",49.4333,1.08333,3
 2026-10-25,"Trappes, France (general), France",48.7741,2.01781,1
+2026-10-26,"Clermont-Ferrand, Auvergne, France",45.7797,3.08628,6
+2026-10-26,"La Bastille, RhôAlpes, France",45.1998,5.72534,1
+2026-10-26,"Lanouaille, Aquitaine, France",45.3952,1.13968,1
+2026-10-26,"Loiret, Centre, France",47.8632,1.80278,1
+2026-10-26,"Paris, France (general), France",48.8667,2.33333,48
+2026-10-26,"Rhone, France (general), France",43.3329,4.84511,4
+2026-10-26,"Rouen, Haute-Normandie, France",49.4333,1.08333,1
+2026-10-26,"Trappes, France (general), France",48.7741,2.01781,1
+2026-10-27,"Barrot, Auvergne, France",46.1026,2.76841,1
+2026-10-27,"Paris, France (general), France",48.8667,2.33333,25
+2026-10-27,"Roncevaux, Îe-de-France, France",48.2782,2.42622,1
+2026-10-27,"Trappes, France (general), France",48.7741,2.01781,1
+2026-10-28,"Barrot, Auvergne, France",46.1026,2.76841,1
+2026-10-28,"Clermont-Ferrand, Auvergne, France",45.7797,3.08628,1
+2026-10-28,"Gare De Lyon, France (general), France",48.8443,2.37427,1
+2026-10-28,"Palais, RhôAlpes, France",45.3633,4.49802,2
+2026-10-28,"Paris, France (general), France",48.8667,2.33333,11
+2026-10-28,"Sainte-Catherine, Bretagne, France",48.3,-3.55,1
+2026-10-29,"Barrot, Auvergne, France",46.1026,2.76841,1
+2026-10-29,"Carpentras, Provence-Alpes-Côd'Azur, France",44.0544,5.04772,1
+2026-10-29,"Paris, France (general), France",48.8667,2.33333,20
+2026-10-29,"Trappes, France (general), France",48.7741,2.01781,1
