@@ -1,10 +1,4 @@
 date,lieu,lat,lon,n
-2026-08-21,"Gironde, Aquitaine, France",44.584,-0.089244,1
-2026-08-22,"Aix-En-Provence, Provence-Alpes-Côd'Azur, France",43.5287,5.44879,1
-2026-08-22,"Jeux, Bourgogne, France",47.5329,4.25119,2
-2026-08-22,"Montgueux, Champagne-Ardenne, France",48.3063,3.9605,1
-2026-08-22,"Paris, France (general), France",48.8667,2.33333,1
-2026-08-23,"Paris, France (general), France",48.8667,2.33333,1
 2026-08-24,"Gardanne, Provence-Alpes-Côd'Azur, France",43.4546,5.46988,1
 2026-08-24,"Paris, France (general), France",48.8667,2.33333,3
 2026-08-26,"Paris, France (general), France",48.8667,2.33333,1
@@ -311,3 +305,25 @@ date,lieu,lat,lon,n
 2026-10-29,"Carpentras, Provence-Alpes-Côd'Azur, France",44.0544,5.04772,1
 2026-10-29,"Paris, France (general), France",48.8667,2.33333,20
 2026-10-29,"Trappes, France (general), France",48.7741,2.01781,1
+2026-10-30,"Le Havre, Haute-Normandie, France",49.5,0.133333,1
+2026-10-30,"Loiret, Centre, France",47.8632,1.80278,3
+2026-10-30,"Palais, RhôAlpes, France",45.3633,4.49802,1
+2026-10-30,"Paris, France (general), France",48.8667,2.33333,25
+2026-10-30,"Rennes, Bretagne, France",48.112,-1.67429,1
+2026-10-31,"Bagnolet, France (general), France",48.8667,2.41667,1
+2026-10-31,"Charenton, France (general), France",48.8221,2.41217,3
+2026-10-31,"Grandry, Bourgogne, France",46.9949,3.85309,3
+2026-10-31,"Le Havre, Haute-Normandie, France",49.5,0.133333,1
+2026-10-31,"Les Halles, RhôAlpes, France",45.7182,4.43237,4
+2026-10-31,"Matignon, Bretagne, France",48.5963,-2.29125,3
+2026-10-31,"Nogent-Sur-Marne, France (general), France",48.8388,2.47864,9
+2026-10-31,"Paris, France (general), France",48.8667,2.33333,46
+2026-10-31,"Rouen, Haute-Normandie, France",49.4333,1.08333,1
+2026-10-31,"Trappes, France (general), France",48.7741,2.01781,2
+2026-10-31,"Valenciennes, Nord-Pas-de-Calais, France",50.3571,3.52788,1
+2026-11-01,"Charenton, France (general), France",48.8221,2.41217,4
+2026-11-01,"Clermont-Ferrand, Auvergne, France",45.7797,3.08628,1
+2026-11-01,"Les Halles, RhôAlpes, France",45.7182,4.43237,3
+2026-11-01,"Paris, France (general), France",48.8667,2.33333,90
+2026-11-01,"Rennes, Bretagne, France",48.112,-1.67429,1
+2026-11-01,"Valenciennes, Nord-Pas-de-Calais, France",50.3571,3.52788,2
