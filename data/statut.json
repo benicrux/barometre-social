@@ -2,7 +2,7 @@
  {
   "source": "Wikipédia",
   "ok": true,
-  "message": "27 pages suivies ; classements quotidiens : 3 nouveaux jours ; journal automatique : 2 repères ; sujets émergents : 60 pages en forte hausse examinées, 4 retenues"
+  "message": "27 pages suivies ; classements quotidiens : 4 nouveaux jours ; journal automatique : 2 repères ; sujets émergents : 60 pages en forte hausse examinées, 1 retenues"
  },
  {
   "source": "INSEE (enquête ménages)",
@@ -12,12 +12,12 @@
  {
   "source": "GDELT événements",
   "ok": true,
-  "message": "2 jours traités ; historique du 2026-03-26 au 2026-11-03"
+  "message": "5 jours traités ; historique du 2026-03-26 au 2026-11-08"
  },
  {
   "source": "Prix des carburants",
   "ok": true,
-  "message": "gazole 2.252 € ; e10 2.087 €"
+  "message": "gazole 2.204 € ; e10 2.043 €"
  },
  {
   "source": "Territoires (chômage, pauvreté)",

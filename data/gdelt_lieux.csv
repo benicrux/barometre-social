@@ -1,11 +1,4 @@
 date,lieu,lat,lon,n
-2026-08-26,"Paris, France (general), France",48.8667,2.33333,1
-2026-08-26,"Pommery, Champagne-Ardenne, France",49.4149,4.37571,1
-2026-08-27,"Normandy, France (general), France",49,0,1
-2026-08-27,"Paris, France (general), France",48.8667,2.33333,1
-2026-08-28,"Creteil, France (general), France",48.7927,2.46569,1
-2026-08-28,"Les Goudes, Provence-Alpes-Côd'Azur, France",43.2149,5.34714,1
-2026-08-28,"Paris, France (general), France",48.8667,2.33333,1
 2026-08-31,"Marolles, Centre, France",48.253,1.55333,1
 2026-08-31,"Paris, France (general), France",48.8667,2.33333,1
 2026-09-01,"Paris, France (general), France",48.8667,2.33333,1
@@ -338,3 +331,31 @@ date,lieu,lat,lon,n
 2026-11-03,"Le Havre, Haute-Normandie, France",49.5,0.133333,1
 2026-11-03,"Paris, France (general), France",48.8667,2.33333,10
 2026-11-03,"Rennes, Bretagne, France",48.112,-1.67429,2
+2026-11-04,"Paris, France (general), France",48.8667,2.33333,13
+2026-11-04,"Rennes, Bretagne, France",48.112,-1.67429,6
+2026-11-05,"Bussiere-Boffy, Limousin, France",46.0505,0.854403,2
+2026-11-05,"Carpentras, Provence-Alpes-Côd'Azur, France",44.0544,5.04772,1
+2026-11-05,"Charenton, France (general), France",48.8221,2.41217,3
+2026-11-05,"Dunkirk, Nord-Pas-de-Calais, France",51.05,2.36667,1
+2026-11-05,"La Bastille, RhôAlpes, France",45.1998,5.72534,1
+2026-11-05,"La Plaine, Provence-Alpes-Côd'Azur, France",44.65,6.16667,1
+2026-11-05,"Matignon, Bretagne, France",48.5963,-2.29125,2
+2026-11-05,"Paris, France (general), France",48.8667,2.33333,30
+2026-11-05,"Rennes, Bretagne, France",48.112,-1.67429,7
+2026-11-05,"Villedieu, Haute-Normandie, France",49.6416,1.69257,1
+2026-11-06,"Bussiere-Boffy, Limousin, France",46.0505,0.854403,1
+2026-11-06,"Le Touquet, Nord-Pas-de-Calais, France",50.5243,1.58571,1
+2026-11-06,"Matignon, Bretagne, France",48.5963,-2.29125,4
+2026-11-06,"Mulhouse, Alsace, France",47.7381,7.34793,2
+2026-11-06,"Paris, France (general), France",48.8667,2.33333,27
+2026-11-06,"Quimper, Bretagne, France",48,-4.1,2
+2026-11-06,"Rennes, Bretagne, France",48.112,-1.67429,5
+2026-11-07,"Barrot, Auvergne, France",46.1026,2.76841,2
+2026-11-07,"Evreux, Haute-Normandie, France",49.0233,1.15552,1
+2026-11-07,"Le Bourget, RhôAlpes, France",45.6476,5.86085,1
+2026-11-07,"Paris, France (general), France",48.8667,2.33333,25
+2026-11-07,"Rennes, Bretagne, France",48.112,-1.67429,1
+2026-11-08,"Matignon, Bretagne, France",48.5963,-2.29125,1
+2026-11-08,"Paris, France (general), France",48.8667,2.33333,20
+2026-11-08,"Rennes, Bretagne, France",48.112,-1.67429,1
+2026-11-08,"Trappes, France (general), France",48.7741,2.01781,2
