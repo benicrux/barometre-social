@@ -1,10 +1,4 @@
 date,lieu,lat,lon,n
-2026-08-31,"Marolles, Centre, France",48.253,1.55333,1
-2026-08-31,"Paris, France (general), France",48.8667,2.33333,1
-2026-09-01,"Paris, France (general), France",48.8667,2.33333,1
-2026-09-02,"Les Routes, Midi-Pyrées, France",44.9968,1.64588,2
-2026-09-02,"Paris, France (general), France",48.8667,2.33333,2
-2026-09-03,"Paris, France (general), France",48.8667,2.33333,4
 2026-09-04,"Camiers, Nord-Pas-de-Calais, France",50.5715,1.61325,1
 2026-09-04,"Paris, France (general), France",48.8667,2.33333,1
 2026-09-04,"Saclay, France (general), France",48.7326,2.16923,1
@@ -359,3 +353,19 @@ date,lieu,lat,lon,n
 2026-11-08,"Paris, France (general), France",48.8667,2.33333,20
 2026-11-08,"Rennes, Bretagne, France",48.112,-1.67429,1
 2026-11-08,"Trappes, France (general), France",48.7741,2.01781,2
+2026-11-09,"Barrot, Auvergne, France",46.1026,2.76841,1
+2026-11-09,"Gare De Lyon, France (general), France",48.8443,2.37427,2
+2026-11-09,"Orsay, France (general), France",48.6957,2.18727,1
+2026-11-09,"Paris, France (general), France",48.8667,2.33333,17
+2026-11-09,"Trappes, France (general), France",48.7741,2.01781,1
+2026-11-10,"Barrot, Auvergne, France",46.1026,2.76841,1
+2026-11-10,"Paris, France (general), France",48.8667,2.33333,15
+2026-11-10,"Saint-Exupery, Limousin, France",45.5167,2.38333,2
+2026-11-11,"Amiens, Picardie, France",49.9,2.3,1
+2026-11-11,"Charente, France (general), France",45.954,-1.07494,1
+2026-11-11,"Malzieu, Languedoc-Roussillon, France",44.857,3.33301,2
+2026-11-11,"Metigny, Picardie, France",49.9445,1.92816,1
+2026-11-11,"Paris, France (general), France",48.8667,2.33333,5
+2026-11-12,"Bonnefoy, Midi-Pyrées, France",43.6191,1.46115,1
+2026-11-12,"Paris, France (general), France",48.8667,2.33333,8
+2026-11-12,"Varennes, Aquitaine, France",44.8315,0.678237,2
